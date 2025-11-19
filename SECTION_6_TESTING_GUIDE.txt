@@ -1,0 +1,420 @@
+================================================================================
+SECTION 6: BUILD & TEST - COMPLETE TESTING GUIDE
+================================================================================
+University of Michigan - ROB 490
+RIX-ROS Bridge Project
+Created: Nov 6, 2025
+
+================================================================================
+OVERVIEW
+================================================================================
+
+This guide walks through all testing procedures for the RIX-ROS Bridge.
+Follow these steps to verify the bridge is working correctly.
+
+TESTING LEVELS:
+  1. Build Test - Verify compilation
+  2. Unit Tests - Test individual components (converters)
+  3. Integration Tests - Test complete message flow
+  4. Bidirectional Test - Verify both directions simultaneously
+
+PREREQUISITES:
+  - ROS2 Jazzy installed and sourced
+  - RIX C++ and Python libraries installed
+  - Bridge package built successfully
+
+================================================================================
+SECTION 6.1: BUILD TEST
+================================================================================
+
+PURPOSE: Verify the package compiles without errors
+
+COMMANDS:
+────────────────────────────────────────────────────────────────────────────
+cd ~/Desktop/ROB490/bridge_ws
+colcon build --packages-select rix_ros_bridge
+source install/setup.bash
+────────────────────────────────────────────────────────────────────────────
+
+EXPECTED OUTPUT:
+  Starting >>> rix_ros_bridge
+  Finished <<< rix_ros_bridge [X.XX s]
+  Summary: 1 package finished [X.XX s]
+
+SUCCESS CRITERIA:
+  ✓ Exit code 0
+  ✓ No compilation errors
+  ✓ Package appears in install/ directory
+
+TROUBLESHOOTING:
+  - If build fails, check that all Python files are syntactically correct
+  - Verify setup.py has correct entry points
+  - Check that all imports are available
+
+================================================================================
+SECTION 6.2: UNIT TESTS
+================================================================================
+
+PURPOSE: Test message converters (String conversions ROS↔RIX)
+
+WHAT IS TESTED:
+  - ROS String → RIX String conversion
+  - RIX String → ROS String conversion  
+  - Round-trip conversion (data integrity)
+
+COMMANDS:
+────────────────────────────────────────────────────────────────────────────
+cd ~/Desktop/ROB490/bridge_ws
+export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+# Run unit tests
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+────────────────────────────────────────────────────────────────────────────
+
+EXPECTED OUTPUT:
+  ======================== test session starts =========================
+  collected 3 items
+  
+  test_converters.py::TestStringConverter::test_rix_to_ros_conversion PASSED
+  test_converters.py::TestStringConverter::test_ros_to_rix_conversion PASSED
+  test_converters.py::TestStringConverter::test_roundtrip_conversion PASSED
+  
+  ======================== 3 passed in 0.XX s ==========================
+
+SUCCESS CRITERIA:
+  ✓ All 3 tests pass
+  ✓ test_ros_to_rix_conversion: ROS String → RIX String works
+  ✓ test_rix_to_ros_conversion: RIX String → ROS String works
+  ✓ test_roundtrip_conversion: No data loss in conversions
+
+ALTERNATIVE (using colcon):
+────────────────────────────────────────────────────────────────────────────
+colcon test --packages-select rix_ros_bridge
+colcon test-result --verbose
+────────────────────────────────────────────────────────────────────────────
+
+NOTE: colcon test runs linting checks too (flake8, pep257) which may show
+      style warnings. These are non-critical. Focus on functional tests.
+
+================================================================================
+SECTION 6.3: INTEGRATION TEST - ROS→RIX
+================================================================================
+
+PURPOSE: Verify messages flow from ROS to RIX through the bridge
+
+MESSAGE FLOW:
+  External ROS publisher → ROS /chatter → Bridge → RIX /chatter_from_ros
+
+SETUP (4 terminals required):
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 1: Start rixhub
+  cd ~/Desktop/ROB490/rix-cpp
+  source ~/.rix/setup.bash
+  rixhub
+  
+  Expected: "rixhub started on 127.0.0.1:XXXXX"
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 2: Start bridge
+  cd ~/Desktop/ROB490/bridge_ws
+  export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+  source /opt/ros/jazzy/setup.bash
+  source install/setup.bash
+  ros2 run rix_ros_bridge bridge_node
+  
+  Expected:
+    [INFO] RIX-ROS Bridge initialization complete
+    [INFO] Starting bridge spin loop...
+    [INFO] Press Ctrl+C to stop
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 3: Start RIX subscriber (receive bridged messages)
+  cd ~/Desktop/ROB490/rix-py
+  source ~/.rix/venv/bin/activate
+  python3 examples/test_bridge_subscriber.py
+  
+  Expected: "RIX subscriber started. Listening on /chatter_from_ros..."
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 4: Publish from ROS (send test message)
+  cd ~/Desktop/ROB490/bridge_ws
+  source /opt/ros/jazzy/setup.bash
+  ros2 topic pub /chatter std_msgs/msg/String "data: 'Hello from ROS'" --once
+  
+  Expected: "publishing #1: std_msgs.msg.String(data='Hello from ROS')"
+
+────────────────────────────────────────────────────────────────────────────
+
+VERIFICATION:
+  Check TERMINAL 3 (RIX subscriber) - should display:
+    ✓ Received from ROS bridge: 'Hello from ROS'
+
+SUCCESS CRITERIA:
+  ✓ Message published on ROS /chatter
+  ✓ Bridge converted ROS String → RIX String
+  ✓ RIX subscriber received message on /chatter_from_ros
+  ✓ Message content matches original
+
+TROUBLESHOOTING:
+  - If no message received, verify rixhub is running
+  - Check bridge terminal for errors
+  - Ensure PYTHONPATH includes RIX Python library
+  - Verify RIX subscriber is on correct topic (/chatter_from_ros)
+
+================================================================================
+SECTION 6.4: INTEGRATION TEST - RIX→ROS
+================================================================================
+
+PURPOSE: Verify messages flow from RIX to ROS through the bridge
+
+MESSAGE FLOW:
+  External RIX publisher → RIX /chatter → Bridge → ROS /chatter_from_rix
+
+SETUP (4 terminals required):
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 1 & 2: Keep rixhub and bridge running (from Section 6.3)
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 3: Start ROS subscriber (receive bridged messages)
+  cd ~/Desktop/ROB490/bridge_ws
+  source /opt/ros/jazzy/setup.bash
+  ros2 topic echo /chatter_from_rix
+  
+  Expected: (waits for messages, no output yet)
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 4: Start RIX publisher (send test messages)
+  cd ~/Desktop/ROB490/rix-py
+  source ~/.rix/venv/bin/activate
+  python3 examples/test_bridge_publisher.py
+  
+  Expected:
+    RIX publisher started. Publishing to /chatter...
+    Published: 'Hello ROS from RIX #1'
+    Published: 'Hello ROS from RIX #2'
+    ... (continues every 1 second)
+
+────────────────────────────────────────────────────────────────────────────
+
+VERIFICATION:
+  Check TERMINAL 3 (ROS subscriber) - should display:
+    data: 'Hello ROS from RIX #1'
+    ---
+    data: 'Hello ROS from RIX #2'
+    ---
+    data: 'Hello ROS from RIX #3'
+    ---
+    ... (continuous stream)
+
+SUCCESS CRITERIA:
+  ✓ Messages published on RIX /chatter
+  ✓ Bridge converted RIX String → ROS String
+  ✓ ROS subscriber received messages on /chatter_from_rix
+  ✓ Message content matches original
+  ✓ Messages arrive continuously at 1 Hz
+
+STOPPING THE TEST:
+  Press Ctrl+C in Terminal 4 (RIX publisher)
+  Press Ctrl+C in Terminal 3 (ROS subscriber)
+
+================================================================================
+SECTION 6.5: BIDIRECTIONAL TEST
+================================================================================
+
+PURPOSE: Verify both directions work simultaneously WITHOUT message loops
+
+CRITICAL TEST: This verifies the echo-back prevention strategy works!
+
+MESSAGE FLOWS (SIMULTANEOUS):
+  ROS pub → ROS /chatter → Bridge → RIX /chatter_from_ros → RIX sub
+  RIX pub → RIX /chatter → Bridge → ROS /chatter_from_rix → ROS sub
+
+WHAT MUST NOT HAPPEN (echo-back loops):
+  ✗ Bridge should NOT see its own ROS /chatter_from_rix output
+  ✗ Bridge should NOT see its own RIX /chatter_from_ros output
+
+SETUP (6 terminals required):
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 1: rixhub (keep running from previous tests)
+
+TERMINAL 2: bridge_node (keep running from previous tests)
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 3: ROS publisher (continuous)
+  cd ~/Desktop/ROB490/bridge_ws
+  source /opt/ros/jazzy/setup.bash
+  ros2 topic pub /chatter std_msgs/msg/String "data: 'From ROS'" -r 1
+  
+  Expected:
+    publishing #1: std_msgs.msg.String(data='From ROS')
+    publishing #2: std_msgs.msg.String(data='From ROS')
+    ... (continuous at 1 Hz)
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 4: RIX publisher
+  cd ~/Desktop/ROB490/rix-py
+  source ~/.rix/venv/bin/activate
+  python3 examples/test_bridge_publisher.py
+  
+  Expected:
+    Published: 'Hello ROS from RIX #1'
+    Published: 'Hello ROS from RIX #2'
+    ... (continuous at 1 Hz)
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 5: ROS subscriber (watch RIX→ROS messages)
+  cd ~/Desktop/ROB490/bridge_ws
+  source /opt/ros/jazzy/setup.bash
+  ros2 topic echo /chatter_from_rix
+  
+  Expected:
+    data: 'Hello ROS from RIX #1'
+    ---
+    data: 'Hello ROS from RIX #2'
+    ---
+    ... (ONLY messages from RIX, NOT "From ROS")
+
+────────────────────────────────────────────────────────────────────────────
+
+TERMINAL 6: RIX subscriber (watch ROS→RIX messages)
+  cd ~/Desktop/ROB490/rix-py
+  source ~/.rix/venv/bin/activate
+  python3 examples/test_bridge_subscriber.py
+  
+  Expected:
+    ✓ Received from ROS bridge: 'From ROS'
+    ✓ Received from ROS bridge: 'From ROS'
+    ... (ONLY "From ROS", NOT "Hello ROS from RIX")
+
+────────────────────────────────────────────────────────────────────────────
+
+SUCCESS CRITERIA:
+  ✓ Terminal 3 (ROS pub): Publishing "From ROS" continuously
+  ✓ Terminal 4 (RIX pub): Publishing "Hello ROS from RIX #N" continuously
+  ✓ Terminal 5 (ROS sub): Receiving ONLY "Hello ROS from RIX #N"
+  ✓ Terminal 6 (RIX sub): Receiving ONLY "From ROS"
+  
+  CRITICAL CHECKS:
+  ✓ Terminal 5 does NOT show "From ROS" (would indicate loop!)
+  ✓ Terminal 6 does NOT show "Hello ROS from RIX" (would indicate loop!)
+  ✓ Both directions work simultaneously
+  ✓ No infinite message loops
+  ✓ CPU usage remains normal (not spiking from loop)
+
+ECHO-BACK PREVENTION VERIFICATION:
+  The bridge uses separate topic names:
+    - ROS→RIX: Subscribes /chatter → Publishes /chatter_from_ros
+    - RIX→ROS: Subscribes /chatter → Publishes /chatter_from_rix
+  
+  This prevents loops because:
+    - ROS→RIX handle never sees /chatter_from_rix (different topic)
+    - RIX→ROS handle never sees /chatter_from_ros (different topic)
+
+STOPPING THE TEST:
+  Press Ctrl+C in Terminal 3 (ROS publisher)
+  Press Ctrl+C in Terminal 4 (RIX publisher)
+  Press Ctrl+C in Terminal 5 (ROS subscriber)
+  Press Ctrl+C in Terminal 6 (RIX subscriber)
+  Press Ctrl+C in Terminal 2 (bridge node)
+  Press Ctrl+C in Terminal 1 (rixhub)
+
+================================================================================
+QUICK TEST SUMMARY
+================================================================================
+
+SECTION 6.1 - BUILD
+  Command: colcon build --packages-select rix_ros_bridge
+  Result:  Package compiles successfully
+
+SECTION 6.2 - UNIT TESTS
+  Command: python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+  Result:  3/3 converter tests pass
+
+SECTION 6.3 - ROS→RIX
+  Flow:    ros2 topic pub → Bridge → RIX subscriber
+  Result:  Message delivered correctly
+
+SECTION 6.4 - RIX→ROS
+  Flow:    RIX publisher → Bridge → ros2 topic echo
+  Result:  Messages stream correctly
+
+SECTION 6.5 - BIDIRECTIONAL
+  Flow:    Both directions simultaneously
+  Result:  No loops, both directions work
+
+================================================================================
+COMMON ISSUES & SOLUTIONS
+================================================================================
+
+ISSUE: "ModuleNotFoundError: No module named 'rix'"
+  SOLUTION: export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+
+ISSUE: Bridge fails to initialize RIX node
+  SOLUTION: Ensure rixhub is running first
+
+ISSUE: No messages received
+  SOLUTION: 
+    - Check topic names match (/chatter vs /chatter_from_ros/rix)
+    - Verify bridge is running and shows "initialization complete"
+    - Check rixhub logs for registered publishers/subscribers
+
+ISSUE: Bridge shows "context is invalid" on shutdown
+  SOLUTION: This is a known ROS2 issue on Ctrl+C, non-critical, can ignore
+
+ISSUE: Linting failures in colcon test
+  SOLUTION: These are style warnings, not functional errors
+    - Functional tests (converters) pass
+    - Bridge works correctly
+    - Can be fixed with code formatting tools later
+
+ISSUE: Messages loop infinitely
+  SOLUTION: This should NOT happen with separate topic names
+    - Verify bridge_node.py uses ros_topic ≠ rix_topic
+    - Check handle configuration in _create_bridge_handles()
+
+================================================================================
+FOR DEMO/PRESENTATION
+================================================================================
+
+MINIMAL DEMO (2 terminals):
+
+  Terminal 1:
+    rixhub
+  
+  Terminal 2:
+    cd ~/Desktop/ROB490/bridge_ws
+    export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+    source /opt/ros/jazzy/setup.bash
+    source install/setup.bash
+    ros2 run rix_ros_bridge bridge_node
+
+QUICK TEST (add 2 more terminals):
+
+  Terminal 3:
+    ros2 topic pub /chatter std_msgs/msg/String "data: 'Demo message'" --once
+  
+  Terminal 4:
+    ros2 topic echo /chatter_from_rix
+
+SHOW BIDIRECTIONAL (recommended for demo):
+  Run Section 6.5 setup to show both directions working simultaneously
+  Point out separate topic names preventing loops
+
+================================================================================
+END OF TESTING GUIDE
+================================================================================
+
+All tests passing = Bridge is fully functional and ready for deployment!

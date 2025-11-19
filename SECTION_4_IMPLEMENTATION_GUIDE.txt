@@ -1,0 +1,336 @@
+================================================================================
+SECTION 4: BRIDGE HANDLES - COMPLETE IMPLEMENTATION GUIDE
+================================================================================
+University of Michigan - ROB 490
+RIX-ROS Bridge Project
+Created: Nov 6, 2025
+
+================================================================================
+OVERVIEW
+================================================================================
+
+WHAT: Bridge handles manage one-directional message flow
+GOAL: Subscribe to one side, convert messages, publish to other side
+
+DELIVERABLES:
+  ✓ BridgeHandleRosToRix - ROS subscriber → RIX publisher
+  ✓ BridgeHandleRixToRos - RIX subscriber → ROS publisher
+
+ANALOGY: Postal workers at border who receive mail, translate it, forward it
+
+WHY TWO HANDLES? 
+  - Bidirectional = Two one-way bridges
+  - Easier to test independently
+  - Clean separation of concerns
+
+USES SECTION 3: Both handles call StringConverter methods
+
+IMPORTANT - ECHO-BACK PREVENTION:
+  Each handle uses SEPARATE topic names for subscribe and publish to prevent
+  infinite loops where the bridge echoes its own messages back and forth.
+  
+  Example configuration:
+    ROS→RIX: Subscribe to /chatter (ROS) → Publish to /chatter_from_ros (RIX)
+    RIX→ROS: Subscribe to /chatter (RIX) → Publish to /chatter_from_rix (ROS)
+  
+  This prevents the RIX→ROS handle from seeing messages published by ROS→RIX
+  handle and vice versa.
+
+================================================================================
+FILE 1: bridge_handle_ros_to_rix.py - LINE BY LINE
+================================================================================
+
+LOCATION: rix_ros_bridge/bridge_handle_ros_to_rix.py
+PURPOSE: ROS→RIX message bridging
+
+────────────────────────────────────────────────────────────────────────────
+Lines 1-5: Module docstring - Documents ROS→RIX direction
+
+Line 8: class BridgeHandleRosToRix:
+  WHY: Container for ROS→RIX logic
+
+Lines 11-32: __init__(self, ros_node, rix_node, ros_topic, rix_topic, 
+                      ros_msg_class, rix_msg_class, converter)
+  WHY: Store all parameters needed for bridging
+  PARAMETERS:
+    - ros_topic: ROS topic to subscribe to
+    - rix_topic: RIX topic to publish to (different to prevent echo-back!)
+  STORES: Nodes, separate subscribe/publish topics, message types, converter
+  INITIALIZES: ros_subscriber=None, rix_publisher=None, active=False
+
+Lines 34-53: start(self)
+  PURPOSE: Activate the bridge
+  
+  Lines 37-42: Create ROS subscriber
+    self.ros_subscriber = self.ros_node.create_subscription(
+        self.ros_msg_class,    # std_msgs.msg.String
+        self.ros_topic,        # e.g., "/chatter"
+        self.ros_callback,     # Function to call on message
+        10                     # Queue size
+    )
+    WHY: Listen for ROS messages on ros_topic
+  
+  Lines 45-48: Create RIX publisher
+    self.rix_publisher = self.rix_node.create_publisher(
+        self.rix_msg_class,    # rix.msg.standard.String
+        self.rix_topic         # e.g., "/chatter_from_ros"
+    )
+    WHY: Send converted messages to RIX (on DIFFERENT topic!)
+  
+  Line 50: self.active = True
+    WHY: Enable message processing
+  
+  Lines 51-53: Log "ROS→RIX bridge started"
+    WHY: Inform user bridge is active
+
+Lines 55-81: ros_callback(self, ros_msg)
+  PURPOSE: Core bridging logic - called when ROS message arrives
+  
+  Lines 64-65: Check if active
+    if not self.active: return
+    WHY: Prevent processing during shutdown
+  
+  Line 67: try:
+    WHY: Catch conversion/publishing errors
+  
+  Line 69: **CRITICAL LINE**
+    rix_msg = self.converter.ros_to_rix(ros_msg)
+    WHY: Convert ROS message to RIX message
+    USES: Section 3 StringConverter
+    FLOW: ROS String → RIX String
+  
+  Line 72: self.rix_publisher.publish(rix_msg)
+    WHY: Send converted message to RIX
+    RESULT: Message now on RIX /chatter
+  
+  Lines 75-77: Log debug message
+    WHY: Track bridging for debugging
+  
+  Lines 78-81: except Exception as e: log error
+    WHY: Catch errors without crashing bridge
+
+Lines 83-97: stop(self)
+  PURPOSE: Clean shutdown
+  
+  Line 85: self.active = False
+    WHY: Stop processing new messages
+  
+  Lines 88-90: Destroy ROS subscriber
+    WHY: Unsubscribe, free resources
+  
+  Lines 92-93: Clear RIX publisher
+    WHY: Release reference
+  
+  Lines 95-97: Log "ROS→RIX bridge stopped"
+
+────────────────────────────────────────────────────────────────────────────
+SUMMARY: bridge_handle_ros_to_rix.py
+────────────────────────────────────────────────────────────────────────────
+
+LIFECYCLE:
+  __init__ → start() → ros_callback() (on messages) → stop()
+
+MESSAGE FLOW:
+  ROS /chatter → ros_subscriber → ros_callback() →
+  converter.ros_to_rix() → rix_publisher → RIX /chatter_from_ros
+
+NOTE: Different topic names (ros_topic ≠ rix_topic) prevent echo-back loop!
+
+KEY LINE: Line 69 uses Section 3 converter
+
+================================================================================
+FILE 2: bridge_handle_rix_to_ros.py - LINE BY LINE
+================================================================================
+
+LOCATION: rix_ros_bridge/bridge_handle_rix_to_ros.py
+PURPOSE: RIX→ROS message bridging (REVERSE DIRECTION)
+
+────────────────────────────────────────────────────────────────────────────
+Lines 1-5: Module docstring - Documents RIX→ROS direction
+
+Line 8: class BridgeHandleRixToRos:
+  WHY: Container for RIX→ROS logic
+
+Lines 11-32: __init__(self, ros_node, rix_node, rix_topic, ros_topic,
+                      ros_msg_class, rix_msg_class, converter)
+  WHY: Store references
+  PARAMETERS:
+    - rix_topic: RIX topic to subscribe to
+    - ros_topic: ROS topic to publish to (different to prevent echo-back!)
+  DIFFERENCE: Initializes rix_subscriber=None, ros_publisher=None (swapped)
+
+Lines 34-53: start(self)
+  PURPOSE: Activate reverse bridge
+  
+  Lines 37-41: Create ROS publisher (not subscriber!)
+    self.ros_publisher = self.ros_node.create_publisher(
+        self.ros_msg_class,
+        self.ros_topic,        # e.g., "/chatter_from_rix"
+        10
+    )
+    WHY: Send converted messages to ROS (on DIFFERENT topic!)
+  
+  Lines 44-48: Create RIX subscriber (not publisher!)
+    self.rix_subscriber = self.rix_node.create_subscriber(
+        self.rix_msg_class,
+        self.rix_topic,        # e.g., "/chatter"
+        self.rix_callback
+    )
+    WHY: Listen for RIX messages on rix_topic
+  
+  Line 50: self.active = True
+  Lines 51-53: Log "RIX→ROS bridge started"
+
+Lines 55-81: rix_callback(self, rix_msg)
+  PURPOSE: Handle incoming RIX messages
+  
+  Lines 64-65: Check if active
+  Line 67: try:
+  
+  Line 69: **CRITICAL LINE**
+    ros_msg = self.converter.rix_to_ros(rix_msg)
+    WHY: Convert RIX message to ROS message
+    USES: Section 3 StringConverter (opposite direction)
+    FLOW: RIX String → ROS String
+  
+  Line 72: self.ros_publisher.publish(ros_msg)
+    WHY: Send converted message to ROS
+    RESULT: Message now on ROS /chatter
+  
+  Lines 75-77: Log debug
+  Lines 78-81: except: log error
+
+Lines 83-97: stop(self)
+  PURPOSE: Clean shutdown
+  Line 85: self.active = False
+  Lines 88-90: Destroy ROS publisher (not subscriber!)
+  Lines 92-93: Clear RIX subscriber (not publisher!)
+  Lines 95-97: Log "RIX→ROS bridge stopped"
+
+────────────────────────────────────────────────────────────────────────────
+SUMMARY: bridge_handle_rix_to_ros.py
+────────────────────────────────────────────────────────────────────────────
+
+LIFECYCLE:
+  __init__ → start() → rix_callback() (on messages) → stop()
+
+MESSAGE FLOW:
+  RIX /chatter → rix_subscriber → rix_callback() →
+  converter.rix_to_ros() → ros_publisher → ROS /chatter_from_rix
+
+NOTE: Different topic names (rix_topic ≠ ros_topic) prevent echo-back loop!
+
+KEY LINE: Line 69 uses Section 3 converter (reverse direction)
+
+MIRROR OF FILE 1: Everything swapped (ROS↔RIX, pub↔sub, ros_to_rix↔rix_to_ros)
+
+================================================================================
+HOW IT ALL WORKS TOGETHER
+================================================================================
+
+BIDIRECTIONAL ARCHITECTURE (WITH ECHO-BACK PREVENTION):
+
+    ROS System              Bridge Handles              RIX System
+        │                                                   │
+    /chatter ────────► BridgeHandleRosToRix ────────► /chatter_from_ros
+        │                (subscribe ROS,                    │
+        │                 publish RIX)                      │
+        │                                                   │
+/chatter_from_rix ◄─── BridgeHandleRixToRos ◄────────  /chatter
+                       (subscribe RIX,
+                        publish ROS)
+
+NOTE: Different publish topic names prevent infinite echo-back loop!
+
+EXAMPLE: ROS publishes "Hello"
+  1. ROS publisher sends String(data="Hello") to /chatter
+  2. BridgeHandleRosToRix.ros_callback() triggered (subscribed to /chatter)
+  3. Calls StringConverter.ros_to_rix() → RixString(data="Hello")
+  4. Publishes to RIX /chatter_from_ros (NOT /chatter!)
+  5. RIX subscribers on /chatter_from_ros receive "Hello"
+  6. RIX→ROS handle ignores this (subscribes to /chatter, not /chatter_from_ros)
+  ✓ NO ECHO-BACK LOOP!
+
+EXAMPLE: RIX publishes "World"
+  1. RIX publisher sends RixString(data="World") to /chatter
+  2. BridgeHandleRixToRos.rix_callback() triggered (subscribed to /chatter)
+  3. Calls StringConverter.rix_to_ros() → String(data="World")
+  4. Publishes to ROS /chatter_from_rix (NOT /chatter!)
+  5. ROS subscribers on /chatter_from_rix receive "World"
+  6. ROS→RIX handle ignores this (subscribes to /chatter, not /chatter_from_rix)
+  ✓ NO ECHO-BACK LOOP!
+
+ERROR HANDLING:
+  - Try/except in callbacks catches errors
+  - One bad message doesn't crash bridge
+  - Errors logged for debugging
+  - Bridge continues running
+
+USES SECTION 3:
+  - BridgeHandleRosToRix calls StringConverter.ros_to_rix()
+  - BridgeHandleRixToRos calls StringConverter.rix_to_ros()
+
+MANAGED BY SECTION 5 (not yet implemented):
+  - Section 5 will create instances of these handles
+  - Call start() to activate them
+  - Run event loops to process messages
+  - Call stop() on shutdown
+
+================================================================================
+ECHO-BACK PREVENTION STRATEGY
+================================================================================
+
+WHY IT MATTERS:
+  Without separate topic names, the bridge would create an infinite loop:
+  
+  External ROS publisher → /chatter (ROS)
+    → Bridge ROS→RIX → /chatter (RIX)
+    → Bridge RIX→ROS → /chatter (ROS)  ← Bridge sees its own message!
+    → Bridge ROS→RIX → /chatter (RIX)  ← Loop continues forever!
+  
+  This would:
+    - Flood the network with duplicate messages
+    - Consume all CPU resources
+    - Make the bridge unusable
+    - Crash the system
+
+SOLUTION IMPLEMENTED:
+  Use different topic names for subscribe vs publish:
+  
+  ROS→RIX Handle:
+    Subscribe to:  /chatter (ROS)           ← External messages only
+    Publish to:    /chatter_from_ros (RIX)  ← Different name!
+  
+  RIX→ROS Handle:
+    Subscribe to:  /chatter (RIX)           ← External messages only
+    Publish to:    /chatter_from_rix (ROS)  ← Different name!
+  
+  Result: Each handle only sees EXTERNAL messages, never its counterpart's output!
+
+TESTING COMMANDS FOR DEMO:
+  # Test ROS → RIX bridging
+  ros2 topic pub /chatter std_msgs/msg/String "data: 'Hello from ROS'"
+  # Listen on RIX: /chatter_from_ros
+  
+  # Test RIX → ROS bridging
+  # Publish on RIX: /chatter
+  ros2 topic echo /chatter_from_rix
+
+================================================================================
+KEY TAKEAWAYS
+================================================================================
+
+✓ Section 4 creates "workers" that bridge messages one direction at a time
+✓ Two separate classes for clean bidirectional bridging
+✓ Each handle: subscribes → converts (using Section 3) → publishes
+✓ Lifecycle: __init__ → start() → callbacks → stop()
+✓ Error handling prevents crashes from bad messages
+✓ CRITICAL: Separate topic names prevent infinite echo-back loops
+✓ Section 5 will manage these handles and run the event loops
+
+NEXT: Section 5 implements the main bridge node that creates and manages
+      these handles, runs the ROS and RIX event loops, and handles shutdown.
+
+================================================================================
+END OF SECTION 4 GUIDE
+================================================================================

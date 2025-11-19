@@ -1,0 +1,138 @@
+================================================================================
+PHASE 2: CONFIGURATION-DRIVEN MULTI-TYPE BRIDGE ARCHITECTURE
+================================================================================
+University of Michigan - ROB 490
+RIX-ROS Bridge Project
+For Advisor Review - Nov 28, 2025 Deadline
+
+================================================================================
+DESIGN OVERVIEW
+================================================================================
+
+Phase 2 transforms the hard-coded single-type bridge into a configurable
+system supporting multiple predefined ROS/RIX message type pairs. The
+architecture introduces three key components: (1) a JSON registry mapping
+ROS message types to their RIX equivalents (e.g., `std_msgs/String` ↔
+`rix.msg.standard.String`), (2) a converter library with modular conversion
+classes for each message type (StringConverter, Int32Converter, PoseConverter,
+etc.), and (3) a JSON configuration file allowing users to specify which
+topics to bridge without code modifications. At startup, a BridgeFactory reads
+the configuration, dynamically loads the appropriate message classes using
+Python's importlib, retrieves the corresponding converter from a registry, and
+instantiates bridge handles for each configured topic pair. This design
+eliminates code redundancy—adding a new message type only requires creating a
+converter class and updating the JSON mappings, with no changes to the core
+bridge logic.
+
+The system maintains Phase 1's echo-back prevention through separate topic
+naming while enabling multiple bridges of different types to run
+simultaneously. By separating concerns (data mappings in JSON, conversion logic
+in dedicated classes, user configuration in JSON), the architecture scales
+efficiently from the current 1 message type to 10+ types without exponential
+code growth. Testing follows the same unit/integration pattern from Phase 1,
+with each converter tested independently for bidirectional conversion
+correctness before integration testing validates multi-type, multi-bridge
+scenarios. This approach aligns with industry standards observed in
+ros_gz_bridge and positions the project for Phase 3's custom message type
+support by establishing a robust dynamic loading and factory pattern foundation.
+
+================================================================================
+KEY COMPONENTS
+================================================================================
+
+1. MESSAGE TYPE REGISTRY (message_mappings.json)
+   - Maps ROS message types to RIX equivalents
+   - Specifies import paths and converter names
+   - Data-driven approach (no code changes needed)
+
+2. CONVERTER LIBRARY (converters/)
+   - Modular converter classes per message type
+   - Each implements ros_to_rix() and rix_to_ros()
+   - Organized by ROS package (std_msgs, geometry_msgs, etc.)
+
+3. DYNAMIC LOADER (message_loader.py)
+   - Runtime loading of message classes via importlib
+   - Retrieves converters from registry
+   - Error handling for missing types
+
+4. BRIDGE FACTORY (bridge_factory.py)
+   - Creates bridge instances from configuration
+   - Validates message types and configuration
+   - Returns configured BridgeHandle instances
+
+5. JSON CONFIGURATION (bridge_config.json)
+   - User-facing bridge specifications
+   - Defines topics, message types, directions
+   - No coding required to add new bridges
+
+6. CONFIGURABLE NODE (bridge_node.py)
+   - Reads configuration at startup
+   - Creates multiple bridges dynamically
+   - Manages lifecycle of all bridges
+
+================================================================================
+SCALABILITY & MAINTAINABILITY
+================================================================================
+
+PHASE 1 (Hard-coded):
+  - 1 message type = ~50 lines of bridge code
+  - Adding type requires editing bridge_node.py
+  - Linear code growth with each type
+
+PHASE 2 (Config-driven):
+  - 1 message type = 3 JSON lines + 1 converter class
+  - Adding type requires NO bridge_node.py changes
+  - Core logic remains constant regardless of type count
+
+EXAMPLE: Adding Int32 support
+  Phase 1: Edit bridge_node.py, add imports, rebuild
+  Phase 2: Add JSON entry, create Int32Converter, restart
+
+================================================================================
+TESTING STRATEGY
+================================================================================
+
+UNIT TESTS:
+  - Each converter tested independently
+  - ROS→RIX conversion accuracy
+  - RIX→ROS conversion accuracy
+  - Round-trip data integrity
+
+INTEGRATION TESTS:
+  - Multi-type bridges running simultaneously
+  - Different direction modes (bidirectional, unidirectional)
+  - Configuration validation
+  - Dynamic loading verification
+
+STRESS TESTS:
+  - 10+ bridges active concurrently
+  - High message throughput
+  - Memory and CPU profiling
+
+================================================================================
+ALIGNMENT WITH INDUSTRY STANDARDS
+================================================================================
+
+Based on analysis of ros_gz_bridge (ROS2-Gazebo bridge):
+  ✓ Similar factory pattern for bridge creation
+  ✓ Registry-based converter lookup
+  ✓ JSON configuration for user-facing setup
+  ✓ Modular converter design
+  ✓ Separation of concerns (data/logic/config)
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+By Nov 28, 2025:
+  1. Support for 5+ predefined message types
+  2. JSON message type registry
+  3. JSON bridge configuration system
+  4. Dynamic message loading infrastructure
+  5. Comprehensive test suite
+  6. Updated documentation
+  7. Live demonstration
+
+================================================================================
+END OF DESIGN EXPLANATION
+================================================================================

@@ -1,0 +1,908 @@
+================================================================================
+SECTION 3: MESSAGE CONVERTERS - COMPLETE IMPLEMENTATION GUIDE
+================================================================================
+University of Michigan - ROB 490
+RIX-ROS Bridge Project
+Created: Nov 6, 2025
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. SECTION 3 OVERVIEW
+2. WHY MESSAGE CONVERTERS?
+3. ARCHITECTURE OVERVIEW
+4. FILE 1: converters/__init__.py (Base Converter Interface)
+5. FILE 2: converters/std_msgs.py (String Converter Implementation)
+6. FILE 3: test/test_converters.py (Unit Tests)
+7. HOW IT ALL WORKS TOGETHER
+8. TESTING THE CONVERTERS
+
+================================================================================
+1. SECTION 3 OVERVIEW
+================================================================================
+
+WHAT: Section 3 implements message conversion between ROS2 and RIX formats
+
+GOAL: Create translator functions that convert String messages bidirectionally:
+  - ROS2 std_msgs/String ↔ RIX rix.msg.standard.String
+
+DELIVERABLES:
+  ✓ Base converter interface (MessageConverter class)
+  ✓ String converter implementation (StringConverter class)
+  ✓ Unit tests for all conversion functions
+
+ANALOGY: Like building a dictionary for translating English ↔ Spanish
+  - The base converter is the template for dictionary entries
+  - The String converter is one specific entry in the dictionary
+  - Tests verify the translations are accurate
+
+================================================================================
+2. WHY MESSAGE CONVERTERS?
+================================================================================
+
+PROBLEM:
+  ROS2 and RIX are two different middleware systems. They speak different
+  "languages" - their message formats are different even when representing
+  the same data.
+
+  Example:
+    - Both have a "String" message type
+    - Both store text data
+    - But they are DIFFERENT Python classes
+    - You cannot directly pass a ROS String to RIX (or vice versa)
+
+SOLUTION:
+  Create converter functions that translate between the two formats by:
+    1. Creating a new message object of the target type
+    2. Copying data from source fields to target fields
+    3. Returning the translated message
+
+WHEN USED:
+  - Section 4 (Bridge Handles) will call these converters
+  - Every time a message crosses from ROS→RIX or RIX→ROS
+  - The converter translates it so the receiving side can understand it
+
+WHY SEPARATE FROM BRIDGE LOGIC:
+  - Clean separation of concerns (translation vs. message passing)
+  - Easy to test conversion logic independently
+  - Easy to add new message types without modifying bridge code
+  - Follows software engineering best practices
+
+================================================================================
+3. ARCHITECTURE OVERVIEW
+================================================================================
+
+COMPONENT HIERARCHY:
+
+  MessageConverter (Base Class)
+        │
+        │ defines interface
+        │
+        ▼
+  StringConverter (Concrete Class)
+        │
+        │ implements conversion
+        │
+        ├─→ ros_to_rix()  : Converts ROS String → RIX String
+        └─→ rix_to_ros()  : Converts RIX String → ROS String
+
+WHY THIS STRUCTURE?
+  - Base class ensures all converters have the same interface
+  - Makes it easy to add new message types later (Point, Pose, etc.)
+  - Bridge code can use any converter without knowing implementation details
+
+================================================================================
+4. FILE 1: converters/__init__.py (Base Converter Interface)
+================================================================================
+
+FILE PURPOSE:
+  Defines the MessageConverter base class that all specific converters inherit
+
+FILE LOCATION:
+  bridge_ws/src/rix_ros_bridge/rix_ros_bridge/converters/__init__.py
+
+TOTAL LINES: 36
+
+────────────────────────────────────────────────────────────────────────────
+LINE-BY-LINE BREAKDOWN:
+────────────────────────────────────────────────────────────────────────────
+
+Lines 1-5: Module Docstring
+───────────────────────────────────────────────────────────────────────────
+"""
+Message Converters Package
+
+Contains message conversion functions between ROS2 and RIX message types.
+"""
+
+WHY: Documents what this package does
+PURPOSE: Helps developers understand the module's role
+
+
+Line 8: Class Definition
+───────────────────────────────────────────────────────────────────────────
+class MessageConverter:
+
+WHY: Defines the base converter interface
+PURPOSE: All specific converters (String, Point, etc.) will inherit from this
+
+
+Line 9: Class Docstring
+───────────────────────────────────────────────────────────────────────────
+    """Base converter interface."""
+
+WHY: Documents that this is an abstract base class/interface
+PURPOSE: Clarifies this is not meant to be used directly
+
+
+Line 11: Decorator
+───────────────────────────────────────────────────────────────────────────
+    @staticmethod
+
+WHY: Makes ros_to_rix a static method (no 'self' parameter needed)
+PURPOSE: Converters don't need instance state; static methods are cleaner
+BENEFIT: Can call StringConverter.ros_to_rix() without creating an instance
+
+
+Lines 12-22: ros_to_rix Method Definition
+───────────────────────────────────────────────────────────────────────────
+    def ros_to_rix(ros_msg):
+        """
+        Convert ROS message to RIX message.
+        
+        Args:
+            ros_msg: ROS2 message instance
+            
+        Returns:
+            RIX message instance
+        """
+        raise NotImplementedError("Subclass must implement ros_to_rix")
+
+WHY: Defines the interface signature for ROS→RIX conversion
+PURPOSE: Forces subclasses to implement this method
+
+PARAMETERS:
+  - ros_msg: The incoming ROS2 message to convert
+
+RETURNS:
+  - A RIX message with the same data
+
+RAISES NotImplementedError:
+  - If someone tries to call this on the base class
+  - This is intentional - forces you to use a specific converter (like StringConverter)
+
+
+Line 24: Decorator
+───────────────────────────────────────────────────────────────────────────
+    @staticmethod
+
+WHY: Makes rix_to_ros a static method
+PURPOSE: Same reason as ros_to_rix
+
+
+Lines 25-35: rix_to_ros Method Definition
+───────────────────────────────────────────────────────────────────────────
+    def rix_to_ros(rix_msg):
+        """
+        Convert RIX message to ROS message.
+        
+        Args:
+            rix_msg: RIX message instance
+            
+        Returns:
+            ROS2 message instance
+        """
+        raise NotImplementedError("Subclass must implement rix_to_ros")
+
+WHY: Defines the interface signature for RIX→ROS conversion
+PURPOSE: Forces subclasses to implement this method (mirror of ros_to_rix)
+
+PARAMETERS:
+  - rix_msg: The incoming RIX message to convert
+
+RETURNS:
+  - A ROS2 message with the same data
+
+RAISES NotImplementedError:
+  - If someone tries to call this on the base class
+
+
+────────────────────────────────────────────────────────────────────────────
+SUMMARY: converters/__init__.py
+────────────────────────────────────────────────────────────────────────────
+
+KEY POINTS:
+  ✓ Defines the interface contract for all converters
+  ✓ Two required methods: ros_to_rix() and rix_to_ros()
+  ✓ Uses @staticmethod for clean API
+  ✓ NotImplementedError forces concrete implementations
+
+DESIGN PATTERN: Abstract Base Class / Interface Pattern
+BENEFIT: Ensures all converters have consistent API
+
+================================================================================
+5. FILE 2: converters/std_msgs.py (String Converter Implementation)
+================================================================================
+
+FILE PURPOSE:
+  Implements the actual String message conversion logic
+
+FILE LOCATION:
+  bridge_ws/src/rix_ros_bridge/rix_ros_bridge/converters/std_msgs.py
+
+TOTAL LINES: 43
+
+────────────────────────────────────────────────────────────────────────────
+LINE-BY-LINE BREAKDOWN:
+────────────────────────────────────────────────────────────────────────────
+
+Lines 1-5: Module Docstring
+───────────────────────────────────────────────────────────────────────────
+"""
+std_msgs Converters
+
+Message converters for std_msgs package (String, Header, etc.)
+"""
+
+WHY: Documents this module handles std_msgs conversions
+PURPOSE: Currently only String, but designed to add more later
+NOTE: "Header, etc." anticipates future expansion
+
+
+Line 7: Import ROS String
+───────────────────────────────────────────────────────────────────────────
+from std_msgs.msg import String as RosString
+
+WHY: Import the ROS2 String message type
+PURPOSE: Need this class to create ROS String instances
+
+"as RosString":
+  - Renames to avoid confusion with Python's built-in str type
+  - Makes it clear this is the ROS version of String
+
+
+Line 8: Import RIX String
+───────────────────────────────────────────────────────────────────────────
+from rix.msg.standard import String as RixString
+
+WHY: Import the RIX String message type
+PURPOSE: Need this class to create RIX String instances
+
+"as RixString":
+  - Distinguishes from RosString
+  - Makes code more readable
+
+
+Line 11: Class Definition
+───────────────────────────────────────────────────────────────────────────
+class StringConverter:
+
+WHY: Concrete implementation for String conversion
+PURPOSE: Implements the actual translation logic
+NOTE: Could inherit from MessageConverter, but not required in Python
+
+
+Line 12: Class Docstring
+───────────────────────────────────────────────────────────────────────────
+    """Converter for std_msgs/String <-> rix.msg.standard.String"""
+
+WHY: Documents what this converter handles
+PURPOSE: Shows bidirectional conversion with <-> symbol
+
+
+Line 14: Decorator
+───────────────────────────────────────────────────────────────────────────
+    @staticmethod
+
+WHY: Static method (no instance needed)
+PURPOSE: Matches base class interface
+
+
+Lines 15-24: ros_to_rix Method Signature
+───────────────────────────────────────────────────────────────────────────
+    def ros_to_rix(ros_msg):
+        """
+        Convert ROS String to RIX String.
+        
+        Args:
+            ros_msg: std_msgs.msg.String
+            
+        Returns:
+            rix.msg.standard.String
+        """
+
+WHY: Documents what the method does
+PURPOSE: Clear interface documentation with specific types
+
+
+Line 25: Create RIX String Instance
+───────────────────────────────────────────────────────────────────────────
+        rix_msg = RixString()
+
+WHY: Create empty RIX String message object
+PURPOSE: Need a container to put the converted data into
+
+WHAT HAPPENS:
+  - Calls RixString constructor
+  - Creates new message with default values
+  - Ready to have data copied into it
+
+
+Line 26: Copy Data Field
+───────────────────────────────────────────────────────────────────────────
+        rix_msg.data = ros_msg.data
+
+WHY: Transfer the actual string content from ROS to RIX
+PURPOSE: This is the core conversion - copy the data
+
+WHAT'S HAPPENING:
+  - Read the 'data' field from the incoming ROS message
+  - Write it to the 'data' field of the new RIX message
+  - Both String types have a 'data' field containing text
+
+IMPORTANT: This is a DIRECT COPY because:
+  - Both 'data' fields are Python strings
+  - No transformation needed (string = string)
+  - For complex types (like timestamps), conversion would be harder
+
+
+Line 27: Return Converted Message
+───────────────────────────────────────────────────────────────────────────
+        return rix_msg
+
+WHY: Give back the converted message
+PURPOSE: Caller gets a RIX String they can publish
+
+RESULT: Complete ROS→RIX conversion done!
+
+
+Line 29: Decorator
+───────────────────────────────────────────────────────────────────────────
+    @staticmethod
+
+WHY: Static method for reverse direction
+PURPOSE: Matches interface pattern
+
+
+Lines 30-39: rix_to_ros Method Signature
+───────────────────────────────────────────────────────────────────────────
+    def rix_to_ros(rix_msg):
+        """
+        Convert RIX String to ROS String.
+        
+        Args:
+            rix_msg: rix.msg.standard.String
+            
+        Returns:
+            std_msgs.msg.String
+        """
+
+WHY: Documents reverse conversion
+PURPOSE: Mirror of ros_to_rix but opposite direction
+
+
+Line 40: Create ROS String Instance
+───────────────────────────────────────────────────────────────────────────
+        ros_msg = RosString()
+
+WHY: Create empty ROS String message object
+PURPOSE: Container for converted data (RIX→ROS direction)
+
+
+Line 41: Copy Data Field
+───────────────────────────────────────────────────────────────────────────
+        ros_msg.data = rix_msg.data
+
+WHY: Transfer string content from RIX to ROS
+PURPOSE: Core conversion in reverse direction
+
+SAME LOGIC AS LINE 26:
+  - Direct copy of 'data' field
+  - Both types use Python strings
+  - No transformation needed
+
+
+Line 42: Return Converted Message
+───────────────────────────────────────────────────────────────────────────
+        return ros_msg
+
+WHY: Give back the converted message
+PURPOSE: Caller gets a ROS String they can publish
+
+RESULT: Complete RIX→ROS conversion done!
+
+
+────────────────────────────────────────────────────────────────────────────
+SUMMARY: converters/std_msgs.py
+────────────────────────────────────────────────────────────────────────────
+
+KEY POINTS:
+  ✓ Imports both ROS and RIX String types
+  ✓ Implements bidirectional conversion
+  ✓ Simple data copying (data field → data field)
+  ✓ Creates new message instances, copies data, returns
+
+CONVERSION FLOW (ROS→RIX):
+  1. Receive ROS String message
+  2. Create new RIX String instance
+  3. Copy data field
+  4. Return RIX message
+
+CONVERSION FLOW (RIX→ROS):
+  1. Receive RIX String message
+  2. Create new ROS String instance
+  3. Copy data field
+  4. Return ROS message
+
+WHY SO SIMPLE?
+  String messages only have one field ('data')
+  Both types store plain Python strings
+  No complex transformations needed
+
+FUTURE COMPLEXITY:
+  For messages like Pose or Header, would need to:
+  - Convert multiple fields
+  - Handle nested messages
+  - Transform timestamps (sec/nsec vs sec/nanosec)
+
+================================================================================
+6. FILE 3: test/test_converters.py (Unit Tests)
+================================================================================
+
+FILE PURPOSE:
+  Verify that converter functions work correctly
+
+FILE LOCATION:
+  bridge_ws/src/rix_ros_bridge/test/test_converters.py
+
+TOTAL LINES: 68
+
+────────────────────────────────────────────────────────────────────────────
+LINE-BY-LINE BREAKDOWN:
+────────────────────────────────────────────────────────────────────────────
+
+Lines 1-5: Module Docstring
+───────────────────────────────────────────────────────────────────────────
+"""
+Test Message Converters
+
+Unit tests for message conversion functions.
+"""
+
+WHY: Documents that this file contains tests
+PURPOSE: Explains what is being tested
+
+
+Line 7: Import unittest
+───────────────────────────────────────────────────────────────────────────
+import unittest
+
+WHY: Python's built-in testing framework
+PURPOSE: Provides TestCase class and assertion methods
+
+
+Line 8: Import ROS String
+───────────────────────────────────────────────────────────────────────────
+from std_msgs.msg import String as RosString
+
+WHY: Need to create ROS String instances for testing
+PURPOSE: Create test messages
+
+
+Line 9: Import RIX String
+───────────────────────────────────────────────────────────────────────────
+from rix.msg.standard import String as RixString
+
+WHY: Need to create RIX String instances for testing
+PURPOSE: Create test messages and verify types
+
+
+Line 10: Import StringConverter
+───────────────────────────────────────────────────────────────────────────
+from rix_ros_bridge.converters.std_msgs import StringConverter
+
+WHY: Import the code we're testing
+PURPOSE: Call conversion methods and verify they work
+
+
+Line 13: Test Class Definition
+───────────────────────────────────────────────────────────────────────────
+class TestStringConverter(unittest.TestCase):
+
+WHY: Container for all String converter tests
+PURPOSE: Groups related tests together
+
+INHERITS FROM: unittest.TestCase
+  - Provides assertion methods (assertEqual, assertIsInstance, etc.)
+  - Test runner automatically discovers tests in this class
+
+
+Line 14: Class Docstring
+───────────────────────────────────────────────────────────────────────────
+    """Test String message converter."""
+
+WHY: Documents what's being tested
+PURPOSE: Clear description for test report
+
+
+Line 16: Test Method 1
+───────────────────────────────────────────────────────────────────────────
+    def test_ros_to_rix_conversion(self):
+
+WHY: Test ROS→RIX direction
+PURPOSE: Verify ros_to_rix() works correctly
+
+TEST NAMING:
+  - Must start with "test_" for pytest to discover it
+  - Descriptive name explains what's being tested
+
+
+Line 17: Method Docstring
+───────────────────────────────────────────────────────────────────────────
+        """Test ROS to RIX String conversion."""
+
+WHY: Explains test purpose
+PURPOSE: Shows in test output
+
+
+Lines 19-20: Create Test Input
+───────────────────────────────────────────────────────────────────────────
+        ros_msg = RosString()
+        ros_msg.data = "Hello from ROS"
+
+WHY: Create a sample ROS message to convert
+PURPOSE: Provide known input to test with
+
+TEST DATA: "Hello from ROS"
+  - Simple string to verify
+  - Easy to check if it's preserved
+
+
+Line 23: Call Converter
+───────────────────────────────────────────────────────────────────────────
+        rix_msg = StringConverter.ros_to_rix(ros_msg)
+
+WHY: Execute the function we're testing
+PURPOSE: Convert ROS→RIX
+
+WHAT WE GET: A RIX String (if converter works)
+
+
+Line 26: Assert Type
+───────────────────────────────────────────────────────────────────────────
+        self.assertIsInstance(rix_msg, RixString)
+
+WHY: Verify converter returned correct type
+PURPOSE: Ensure we got a RIX String, not something else
+
+WHAT IT CHECKS:
+  - rix_msg is an instance of RixString class
+  - Test FAILS if wrong type returned
+
+
+Line 27: Assert Data
+───────────────────────────────────────────────────────────────────────────
+        self.assertEqual(rix_msg.data, "Hello from ROS")
+
+WHY: Verify data was copied correctly
+PURPOSE: Ensure content is preserved
+
+WHAT IT CHECKS:
+  - rix_msg.data equals "Hello from ROS"
+  - Data wasn't lost, corrupted, or changed
+  - Test FAILS if data doesn't match
+
+
+Line 29: Test Method 2
+───────────────────────────────────────────────────────────────────────────
+    def test_rix_to_ros_conversion(self):
+
+WHY: Test RIX→ROS direction (reverse)
+PURPOSE: Verify rix_to_ros() works correctly
+
+
+Line 30: Method Docstring
+───────────────────────────────────────────────────────────────────────────
+        """Test RIX to ROS String conversion."""
+
+WHY: Explains test purpose
+PURPOSE: Documentation
+
+
+Lines 32-33: Create Test Input
+───────────────────────────────────────────────────────────────────────────
+        rix_msg = RixString()
+        rix_msg.data = "Hello from RIX"
+
+WHY: Create a sample RIX message to convert
+PURPOSE: Test reverse direction
+
+TEST DATA: "Hello from RIX"
+  - Different string to distinguish from test 1
+
+
+Line 36: Call Converter
+───────────────────────────────────────────────────────────────────────────
+        ros_msg = StringConverter.rix_to_ros(rix_msg)
+
+WHY: Execute the reverse converter
+PURPOSE: Convert RIX→ROS
+
+
+Line 39: Assert Type
+───────────────────────────────────────────────────────────────────────────
+        self.assertIsInstance(ros_msg, RosString)
+
+WHY: Verify converter returned ROS String
+PURPOSE: Type check for reverse direction
+
+
+Line 40: Assert Data
+───────────────────────────────────────────────────────────────────────────
+        self.assertEqual(ros_msg.data, "Hello from RIX")
+
+WHY: Verify data preservation in reverse direction
+PURPOSE: Ensure RIX→ROS conversion works
+
+
+Line 42: Test Method 3
+───────────────────────────────────────────────────────────────────────────
+    def test_roundtrip_conversion(self):
+
+WHY: Test data integrity through multiple conversions
+PURPOSE: Verify no data loss through conversion chain
+
+IMPORTANCE: Critical for bidirectional bridge!
+
+
+Line 43: Method Docstring
+───────────────────────────────────────────────────────────────────────────
+        """Test round-trip conversion preserves data."""
+
+WHY: Explains the round-trip concept
+PURPOSE: Shows we're testing conversion chains
+
+
+Lines 45-46: Create Original ROS Message
+───────────────────────────────────────────────────────────────────────────
+        original_ros = RosString()
+        original_ros.data = "Round-trip test data"
+
+WHY: Starting point for round-trip test
+PURPOSE: Known original data to compare against
+
+
+Line 49: Convert ROS→RIX
+───────────────────────────────────────────────────────────────────────────
+        rix_msg = StringConverter.ros_to_rix(original_ros)
+
+WHY: First conversion in chain
+PURPOSE: ROS to intermediate RIX format
+
+
+Line 50: Convert RIX→ROS
+───────────────────────────────────────────────────────────────────────────
+        final_ros = StringConverter.rix_to_ros(rix_msg)
+
+WHY: Second conversion back to ROS
+PURPOSE: Complete the round-trip
+
+CHAIN: ROS → RIX → ROS
+
+
+Line 53: Assert Round-Trip Integrity
+───────────────────────────────────────────────────────────────────────────
+        self.assertEqual(original_ros.data, final_ros.data)
+
+WHY: Verify data survived the round-trip
+PURPOSE: Check original == final
+
+CRITICAL: If this fails, data is being corrupted/lost!
+
+
+Lines 56-57: Create Original RIX Message
+───────────────────────────────────────────────────────────────────────────
+        original_rix = RixString()
+        original_rix.data = "Reverse round-trip test"
+
+WHY: Test round-trip in opposite direction
+PURPOSE: Start from RIX side
+
+
+Line 59: Convert RIX→ROS
+───────────────────────────────────────────────────────────────────────────
+        ros_msg = StringConverter.rix_to_ros(original_rix)
+
+WHY: First conversion in reverse chain
+PURPOSE: RIX to intermediate ROS format
+
+
+Line 60: Convert ROS→RIX
+───────────────────────────────────────────────────────────────────────────
+        final_rix = StringConverter.ros_to_rix(ros_msg)
+
+WHY: Second conversion back to RIX
+PURPOSE: Complete reverse round-trip
+
+CHAIN: RIX → ROS → RIX
+
+
+Line 63: Assert Reverse Round-Trip Integrity
+───────────────────────────────────────────────────────────────────────────
+        self.assertEqual(original_rix.data, final_rix.data)
+
+WHY: Verify data survived reverse round-trip
+PURPOSE: Check original == final (from RIX side)
+
+
+Lines 66-67: Test Runner
+───────────────────────────────────────────────────────────────────────────
+if __name__ == '__main__':
+    unittest.main()
+
+WHY: Allows running tests directly
+PURPOSE: Can execute: python3 test_converters.py
+
+WHAT IT DOES:
+  - Discovers all test methods (starting with "test_")
+  - Runs each test
+  - Reports results (pass/fail)
+
+
+────────────────────────────────────────────────────────────────────────────
+SUMMARY: test/test_converters.py
+────────────────────────────────────────────────────────────────────────────
+
+TEST COVERAGE:
+  ✓ Test 1: ROS→RIX conversion works
+  ✓ Test 2: RIX→ROS conversion works
+  ✓ Test 3: Round-trip conversions preserve data (both directions)
+
+WHAT WE VERIFY:
+  ✓ Correct output types (RosString or RixString)
+  ✓ Data preservation (content not lost/changed)
+  ✓ Bidirectional integrity (can go back and forth)
+
+WHY ROUND-TRIP TESTS MATTER:
+  In a real bridge, messages might be:
+    Published on ROS → Bridged to RIX → Echoed back → Bridged to ROS
+  
+  Round-trip tests ensure this chain works correctly!
+
+TEST RESULT (when run):
+  ========================= test session starts =========================
+  test_rix_to_ros_conversion PASSED [ 33%]
+  test_ros_to_rix_conversion PASSED [ 66%]
+  test_roundtrip_conversion PASSED [100%]
+  ========================== 3 passed in 0.12s ==========================
+
+================================================================================
+7. HOW IT ALL WORKS TOGETHER
+================================================================================
+
+COMPONENT INTERACTION:
+
+1. BASE INTERFACE (converters/__init__.py)
+   ↓
+   Defines: "All converters must have ros_to_rix() and rix_to_ros()"
+   
+2. CONCRETE IMPLEMENTATION (converters/std_msgs.py)
+   ↓
+   Implements: "Here's how to convert String messages"
+   
+3. TESTS (test/test_converters.py)
+   ↓
+   Verifies: "The implementation works correctly"
+
+
+EXAMPLE USAGE (in future Section 4):
+
+  # Bridge handle receives ROS message
+  def ros_callback(ros_msg):
+      # Use converter to translate
+      rix_msg = StringConverter.ros_to_rix(ros_msg)
+      # Publish to RIX
+      rix_publisher.publish(rix_msg)
+
+
+DATA FLOW IN ACTION:
+
+  ROS Publisher sends:
+    RosString(data="Hello World")
+    
+        ↓ (arrives at bridge)
+        
+  StringConverter.ros_to_rix(ros_msg):
+    1. Create RixString()
+    2. Copy: rix_msg.data = ros_msg.data  # "Hello World"
+    3. Return rix_msg
+    
+        ↓ (publish to RIX)
+        
+  RIX Subscriber receives:
+    RixString(data="Hello World")
+
+
+REVERSE DIRECTION:
+
+  RIX Publisher sends:
+    RixString(data="Hello ROS")
+    
+        ↓ (arrives at bridge)
+        
+  StringConverter.rix_to_ros(rix_msg):
+    1. Create RosString()
+    2. Copy: ros_msg.data = rix_msg.data  # "Hello ROS"
+    3. Return ros_msg
+    
+        ↓ (publish to ROS)
+        
+  ROS Subscriber receives:
+    RosString(data="Hello ROS")
+
+================================================================================
+8. TESTING THE CONVERTERS
+================================================================================
+
+COMMANDS TO RUN TESTS:
+
+  # Setup environment
+  cd ~/Desktop/ROB490/bridge_ws
+  export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+  source /opt/ros/jazzy/setup.bash
+  source install/setup.bash
+  
+  # Run tests
+  python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+
+
+WHAT HAPPENS:
+  1. pytest discovers test methods
+  2. Runs each test in isolation
+  3. Reports pass/fail for each
+  4. Shows summary
+
+
+SUCCESS OUTPUT:
+  test_rix_to_ros_conversion PASSED
+  test_ros_to_rix_conversion PASSED
+  test_roundtrip_conversion PASSED
+  
+  3 passed in 0.12s
+
+
+IF TEST FAILS:
+  - Shows which assertion failed
+  - Displays expected vs actual values
+  - Provides stack trace
+  - Helps debug the converter
+
+
+REBUILDING AFTER CHANGES:
+  If you modify converter code:
+  
+  cd ~/Desktop/ROB490/bridge_ws
+  colcon build --packages-select rix_ros_bridge
+  source install/setup.bash
+  # Then run tests again
+
+================================================================================
+END OF SECTION 3 IMPLEMENTATION GUIDE
+================================================================================
+
+KEY TAKEAWAYS:
+  ✓ Converters translate message formats between ROS2 and RIX
+  ✓ Base class defines interface, concrete class implements it
+  ✓ Simple field copying for String (data → data)
+  ✓ Tests verify correctness and data integrity
+  ✓ This is the "dictionary" that Section 4 will use
+
+NEXT SECTION:
+  Section 4 will use these converters in bridge handles that actually
+  subscribe to messages, convert them, and publish to the other side.
+
+For questions, refer to:
+  - Main roadmap: RIX_ROS_BRIDGE_ROADMAP_NOV7.txt
+  - Converter tests guide: CONVERTER_TESTS_GUIDE.txt
+  - Package README: src/rix_ros_bridge/README.md

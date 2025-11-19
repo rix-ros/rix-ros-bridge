@@ -1,0 +1,242 @@
+================================================================================
+ROS ↔ RIX MESSAGE TYPE MAPPINGS
+================================================================================
+University of Michigan - ROB 490
+Phase 2 Implementation Reference
+Generated: Nov 18, 2025
+
+PURPOSE: Document 1-to-1 mappings between ROS and RIX message types
+
+================================================================================
+MAPPING CATEGORIES
+================================================================================
+
+PRIORITY LEVELS:
+  P1 = High Priority (implement first - common types)
+  P2 = Medium Priority (implement next - useful types)  
+  P3 = Low Priority (implement if time - specialized types)
+  -- = Not mappable / Skip (RIX or ROS specific)
+
+VERIFICATION STATUS:
+  ✓ = VERIFIED COMPATIBLE (field structures checked and match)
+  ? = UNVERIFIED (name-based mapping, needs verification)
+  ✗ = NOT COMPATIBLE or NO EQUIVALENT (cannot bridge)
+
+================================================================================
+STANDARD TYPES (std_msgs)
+================================================================================
+
+PRIORITY | ROS TYPE              | RIX TYPE             | STATUS | NOTES
+---------|------------------------|----------------------|--------|---------------------------
+P1       | std_msgs/String        | standard/String      | ✓      | Phase 1 complete
+P1       | std_msgs/Int32         | standard/Int32       | ✓      | Verified compatible
+P1       | std_msgs/Int64         | standard/Int64       | ✓      | Verified compatible
+P1       | std_msgs/Float32       | standard/Float       | ✓      | Verified compatible
+P1       | std_msgs/Float64       | standard/Double      | ✓      | Verified compatible
+P1       | std_msgs/Bool          | standard/Bool        | ✓      | Verified compatible
+P1       | std_msgs/UInt8         | standard/UInt8       | ✓      | Verified compatible
+P1       | std_msgs/UInt16        | standard/UInt16      | ✓      | Verified compatible
+P1       | std_msgs/UInt32        | standard/UInt32      | ✓      | Verified compatible
+P1       | std_msgs/UInt64        | standard/UInt64      | ✓      | Verified compatible
+P1       | std_msgs/Int8          | standard/Int8        | ✓      | Verified compatible
+P1       | std_msgs/Int16         | standard/Int16       | ✓      | Verified compatible
+P2       | std_msgs/Header        | standard/Header      | ?      | Need to verify
+P2       | std_msgs/ColorRGBA     | standard/Color       | ?      | Need to verify
+P3       | std_msgs/Duration      | standard/Duration    | ?      | Need to verify
+P3       | builtin_interfaces/Time| standard/Time        | ?      | Need to verify
+
+ARRAY TYPES:
+P2       | std_msgs/Int32MultiArray| standard/Int32Array | ?      | Need to verify
+P2       | std_msgs/Int64MultiArray| standard/Int64Array | ?      | Need to verify
+P2       | std_msgs/Float32MultiArray| standard/FloatArray| ?     | Need to verify
+P2       | std_msgs/Float64MultiArray| standard/DoubleArray| ?    | Need to verify
+P3       | std_msgs/UInt8MultiArray| standard/UInt8Array  | ?      | Need to verify
+P3       | std_msgs/UInt16MultiArray| standard/UInt16Array| ?     | Need to verify
+P3       | std_msgs/UInt32MultiArray| standard/UInt32Array| ?     | Need to verify
+P3       | std_msgs/UInt64MultiArray| standard/UInt64Array| ?     | Need to verify
+P3       | std_msgs/Int8MultiArray | standard/Int8Array   | ?      | Need to verify
+P3       | std_msgs/Int16MultiArray| standard/Int16Array  | ?      | Need to verify
+
+OTHER:
+--       | std_msgs/Empty         | standard/Void        | Empty message (may differ)
+
+================================================================================
+GEOMETRY TYPES (geometry_msgs)
+================================================================================
+
+PRIORITY | ROS TYPE                    | RIX TYPE                  | STATUS | NOTES
+---------|------------------------------|---------------------------|--------|------------------
+P1       | geometry_msgs/Point          | geometry/Point            | ✓      | Verified compatible
+P1       | geometry_msgs/Pose           | geometry/Pose             | ✓      | Verified compatible
+P1       | geometry_msgs/Quaternion     | geometry/Quaternion       | ✓      | Verified compatible
+P1       | geometry_msgs/Vector3        | geometry/Vector3          | ✓      | Verified compatible
+P1       | geometry_msgs/Twist          | geometry/Twist            | ✓      | Verified compatible
+P1       | geometry_msgs/Transform      | geometry/Transform        | ✓      | Verified compatible
+P2       | geometry_msgs/PoseStamped    | geometry/PoseStamped      | ?      | Need to verify
+P2       | geometry_msgs/PointStamped   | geometry/PointStamped     | ?      | Need to verify
+P2       | geometry_msgs/TwistStamped   | geometry/TwistStamped     | ?      | Need to verify
+P2       | geometry_msgs/TransformStamped| geometry/TransformStamped| ?      | Need to verify
+P2       | geometry_msgs/QuaternionStamped| geometry/QuaternionStamped| ?     | Need to verify
+P2       | geometry_msgs/Vector3Stamped | geometry/Vector3Stamped   | ?      | Need to verify
+P3       | geometry_msgs/Pose2D         | geometry/Pose2D           | ?      | Need to verify
+P3       | geometry_msgs/Pose2DStamped  | geometry/Pose2DStamped    | ?      | Need to verify
+P3       | geometry_msgs/Twist2D        | geometry/Twist2D          | ?      | Need to verify
+P3       | geometry_msgs/Twist2DStamped | geometry/Twist2DStamped   | ?      | Need to verify
+P3       | geometry_msgs/Inertia        | geometry/Inertia          | ?      | Need to verify
+P3       | geometry_msgs/InertiaStamped | geometry/InertiaStamped   | ?      | Need to verify
+
+TF RELATED:
+P2       | tf2_msgs/TFMessage           | geometry/TF               | ?      | Complex, needs verification
+
+================================================================================
+SENSOR TYPES (sensor_msgs)
+================================================================================
+
+PRIORITY | ROS TYPE                | RIX TYPE              | STATUS | NOTES
+---------|-------------------------|-----------------------|--------|---------------------------
+P1       | sensor_msgs/Image       | sensor/Image          | ?      | Need to verify
+P1       | sensor_msgs/LaserScan   | sensor/LaserScan      | ?      | Need to verify
+P1       | sensor_msgs/Imu         | sensor/IMU            | ?      | Need to verify
+P2       | sensor_msgs/PointCloud2 | sensor/PointCloud     | ?      | Need to verify
+P2       | sensor_msgs/JointState  | sensor/JointState     | ?      | Need to verify
+P2       | sensor_msgs/CompressedImage| sensor/CompressedImage| ?    | Need to verify
+P3       | sensor_msgs/Joy         | sensor/JS             | ?      | Joystick/gamepad?
+
+SPECIALIZED:
+--       | sensor_msgs/Range       | --                    | No RIX equivalent?
+--       | sensor_msgs/NavSatFix   | --                    | No RIX equivalent?
+--       | sensor_msgs/BatteryState| --                    | No RIX equivalent?
+--       | sensor_msgs/CameraInfo  | --                    | No RIX equivalent?
+
+RIX-ONLY SENSOR TYPES (No direct ROS equivalent):
+--       | --                      | sensor/MotorVelocity  | RIX-specific
+--       | --                      | sensor/MotorPWM       | RIX-specific
+--       | --                      | sensor/WheelEncoder   | RIX-specific
+--       | --                      | sensor/GameController | RIX-specific
+--       | --                      | sensor/GameControllerFeedback | RIX-specific
+--       | --                      | sensor/ChannelFloat   | RIX-specific
+--       | --                      | sensor/ChannelInt32   | RIX-specific
+--       | --                      | sensor/DepthImage     | RIX-specific?
+
+================================================================================
+TRAJECTORY TYPES (trajectory_msgs)
+================================================================================
+
+PRIORITY | ROS TYPE                      | RIX TYPE              | STATUS | NOTES
+---------|-------------------------------|-----------------------|--------|------------------
+P3       | trajectory_msgs/JointTrajectory| sensor/JointTrajectory| ?      | Need to verify
+
+================================================================================
+MEDIATOR TYPES (RIX-Specific - SKIP FOR PHASE 2)
+================================================================================
+
+These are RIX internal types with no ROS equivalents:
+  - mediator/ActInfo, mediator/ActRequest, mediator/ActResponse
+  - mediator/PubInfo, mediator/SubInfo, mediator/SrvInfo
+  - mediator/NodeInfo, mediator/SystemInfo, mediator/TopicInfo
+  - mediator/Status, mediator/Endpoint, mediator/Operation
+  - mediator/ParamInfo, mediator/PubNotify, mediator/SubNotify
+  - mediator/SrvRequest, mediator/SrvResponse
+
+DECISION: Skip mediator types for Phase 2 (not needed for bridging)
+
+================================================================================
+PHASE 2 IMPLEMENTATION PRIORITY
+================================================================================
+
+WEEK 1 (P1 - High Priority): 15 types
+------------------------------------
+std_msgs:
+  ✓ String (Phase 1 complete)
+  1. Int32
+  2. Int64
+  3. Float32
+  4. Float64
+  5. Bool
+  6. UInt8, UInt16, UInt32, UInt64
+  7. Int8, Int16
+
+geometry_msgs:
+  8. Point
+  9. Pose
+  10. Quaternion
+  11. Vector3
+  12. Twist
+  13. Transform
+
+sensor_msgs:
+  14. Image
+  15. LaserScan
+  16. Imu
+
+WEEK 2 (P2 - Medium Priority): 10+ types
+-----------------------------------------
+Stamped variants:
+  - PoseStamped, PointStamped, TwistStamped
+  - TransformStamped, QuaternionStamped, Vector3Stamped
+
+Additional:
+  - Header, ColorRGBA
+  - PointCloud2, JointState
+  - CompressedImage
+
+WEEK 3 (P3 - Low Priority): If time permits
+--------------------------------------------
+  - Array types (Int32Array, FloatArray, etc.)
+  - 2D types (Pose2D, Twist2D)
+  - Duration, Time
+  - Inertia types
+  - JointTrajectory
+
+================================================================================
+VERIFICATION STATUS
+================================================================================
+
+LEGEND:
+  ✓ = VERIFIED COMPATIBLE (fields checked, ready to implement)
+  ? = UNVERIFIED (assumed compatible, needs field structure check)
+  ✗ = NOT COMPATIBLE or NO EQUIVALENT (cannot bridge)
+
+P1 TYPES (VERIFIED - Nov 18, 2025):
+  ✓ std_msgs: String, Int32, Int64, Float32, Float64, Bool, UInt8, UInt16, 
+              UInt32, UInt64, Int8, Int16
+  ✓ geometry_msgs: Point, Pose, Quaternion, Vector3, Twist, Transform
+  TOTAL: 18/18 P1 types verified compatible via verify_message_compatibility.py
+
+P2 TYPES (UNVERIFIED - Need to check):
+  ? PoseStamped, PointStamped, TwistStamped, TransformStamped
+  ? QuaternionStamped, Vector3Stamped
+  ? Header, ColorRGBA
+  ? sensor_msgs: Image, LaserScan, IMU, PointCloud, JointState
+
+P3 TYPES (UNVERIFIED - Need to check):
+  ? Array types (Int32Array, FloatArray, etc.)
+  ? 2D types (Pose2D, Twist2D)
+  ? sensor_msgs: CompressedImage
+  ? Inertia types, JointTrajectory
+
+NEED TO VERIFY BEFORE IMPLEMENTATION:
+  □ P2 stamped variants - check Header field compatibility
+  □ P2 sensor types - check complex structures (Image, LaserScan, IMU)
+  □ P3 array types - verify array structure matches
+  □ Image encoding compatibility
+  □ LaserScan angle conventions
+
+ACTION: Run verify_message_compatibility.py with P2/P3 types added
+
+================================================================================
+TOTAL COUNT
+================================================================================
+
+Total RIX types: 81
+  - standard: 22 types
+  - geometry: 18 types
+  - sensor: 15 types
+  - mediator: 26 types (skip)
+
+Mappable to ROS: ~40-45 types
+Phase 2 Target: 15-25 types (P1 + P2)
+
+================================================================================
+END OF MAPPING TABLE
+================================================================================

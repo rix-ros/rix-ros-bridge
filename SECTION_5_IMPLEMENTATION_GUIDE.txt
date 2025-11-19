@@ -1,0 +1,402 @@
+================================================================================
+SECTION 5: MAIN BRIDGE NODE - COMPLETE IMPLEMENTATION GUIDE
+================================================================================
+University of Michigan - ROB 490
+RIX-ROS Bridge Project
+Created: Nov 6, 2025
+
+================================================================================
+OVERVIEW
+================================================================================
+
+WHAT: Main bridge node that manages ROS and RIX nodes and coordinates bridging
+GOAL: Create the "manager" that runs everything and handles the event loops
+
+DELIVERABLES:
+  ✓ RixRosBridge class - Main bridge node
+  ✓ main() function - Entry point with dual spin loop
+  ✓ Entry point configuration in setup.py
+
+ANALOGY: Section 4 created workers, Section 5 creates the manager who:
+  - Hires the workers (creates handle instances)
+  - Opens the facility (starts handles)
+  - Keeps everything running (dual spin loop)
+  - Closes properly on shutdown
+
+USES SECTIONS 3 & 4:
+  - Creates BridgeHandleRosToRix and BridgeHandleRixToRos (Section 4)
+  - Passes StringConverter to handles (Section 3)
+
+================================================================================
+FILE: bridge_node.py - COMPLETE LINE BY LINE
+================================================================================
+
+LOCATION: rix_ros_bridge/bridge_node.py
+PURPOSE: Main bridge node implementation
+TOTAL LINES: 173
+
+────────────────────────────────────────────────────────────────────────────
+Lines 1-17: Imports
+────────────────────────────────────────────────────────────────────────────
+Line 8:  import rclpy
+Line 9:  from rclpy.node import Node as RosNode
+  WHY: ROS2 Python library and base Node class
+
+Line 10: from std_msgs.msg import String as RosString
+Line 13: from rix.msg.standard import String as RixString
+  WHY: Message types for hard-coded /chatter bridge
+
+Line 12: import rix.core
+  WHY: RIX Node class
+
+Lines 15-17: Import bridge handles and converter
+  from rix_ros_bridge.bridge_handle_ros_to_rix import BridgeHandleRosToRix
+  from rix_ros_bridge.bridge_handle_rix_to_ros import BridgeHandleRixToRos
+  from rix_ros_bridge.converters.std_msgs import StringConverter
+  WHY: Need Section 4 handles and Section 3 converter
+
+────────────────────────────────────────────────────────────────────────────
+SECTION 5.1: RixRosBridge Class
+────────────────────────────────────────────────────────────────────────────
+
+Line 20: class RixRosBridge(RosNode):
+  WHY: Main bridge node that inherits from ROS Node
+  INHERITS: RosNode gives us ROS2 node functionality
+  CONTAINS: RIX node as member variable (self.rix_node)
+
+Line 21: Docstring - "Main bridge node managing ROS2 and RIX communication"
+
+Lines 23-47: __init__(self) - Constructor
+──────────────────────────────────────────────────────────────────────────
+Line 31: super().__init__('rix_ros_bridge')
+  WHY: Initialize parent ROS node with name 'rix_ros_bridge'
+  RESULT: self is now a ROS node
+
+Line 33: self.get_logger().info('Initializing RIX-ROS Bridge...')
+  WHY: Log startup message using ROS logger
+  
+Line 36: self.rix_node = rix.core.Node('rix_ros_bridge')
+  WHY: Create RIX node (separate from ROS node!)
+  RESULT: Now have both ROS (self) and RIX (self.rix_node) nodes
+
+Lines 38-40: Error check
+  if not self.rix_node.ok():
+      self.get_logger().error('Failed to initialize RIX node!')
+      raise RuntimeError('RIX node initialization failed')
+  WHY: Verify RIX node created successfully, fail fast if not
+
+Line 42: self.get_logger().info('RIX node initialized successfully')
+  
+Line 45: self._create_bridge_handles()
+  WHY: Call helper method to create and start handles
+  NOTE: Underscore prefix indicates private method
+
+Line 47: Log "initialization complete"
+
+Lines 49-89: _create_bridge_handles(self) - Create Bridge Handles
+──────────────────────────────────────────────────────────────────────────
+PURPOSE: Create both handles with echo-back prevention configuration
+
+Line 59: self.get_logger().info('Creating bridge handles with separate topic names')
+
+Lines 63-71: Create ROS→RIX handle
+  self.ros_to_rix_handle = BridgeHandleRosToRix(
+      ros_node=self,                    # Pass this ROS node
+      rix_node=self.rix_node,           # Pass RIX node
+      ros_topic='/chatter',             # Subscribe to ROS /chatter
+      rix_topic='/chatter_from_ros',    # Publish to RIX /chatter_from_ros
+      ros_msg_class=RosString,
+      rix_msg_class=RixString,
+      converter=StringConverter
+  )
+  WHY: Instantiate ROS→RIX handle with echo-back prevention
+  KEY: ros_topic ≠ rix_topic prevents loop!
+
+Lines 75-83: Create RIX→ROS handle  
+  self.rix_to_ros_handle = BridgeHandleRixToRos(
+      ros_node=self,                    # Pass this ROS node
+      rix_node=self.rix_node,           # Pass RIX node
+      rix_topic='/chatter',             # Subscribe to RIX /chatter
+      ros_topic='/chatter_from_rix',    # Publish to ROS /chatter_from_rix
+      ros_msg_class=RosString,
+      rix_msg_class=RixString,
+      converter=StringConverter
+  )
+  WHY: Instantiate RIX→ROS handle (reverse direction)
+  KEY: rix_topic ≠ ros_topic prevents loop!
+
+Lines 86-87: Start both handles
+  self.ros_to_rix_handle.start()
+  self.rix_to_ros_handle.start()
+  WHY: Activate subscribers and publishers
+  RESULT: Bridge is now operational!
+
+Lines 91-95: spin_once(self) - Process RIX Events
+──────────────────────────────────────────────────────────────────────────
+Line 94: if self.rix_node.ok():
+Line 95:     self.rix_node.spin_once(timeout=0.0)
+
+WHY: Process RIX node events (callbacks)
+CALLED BY: main() function in spin loop
+TIMEOUT 0.0: Non-blocking, return immediately after processing available events
+NOTE: ROS events handled by rclpy.spin_once() in main()
+
+Lines 97-120: shutdown(self) - Cleanup
+──────────────────────────────────────────────────────────────────────────
+Line 103: self.get_logger().info('Shutting down RIX-ROS Bridge...')
+
+Lines 106-107: Stop ROS→RIX handle
+  if hasattr(self, 'ros_to_rix_handle'):
+      self.ros_to_rix_handle.stop()
+  WHY: hasattr checks if handle exists (safe if init failed)
+
+Lines 109-110: Stop RIX→ROS handle
+  if hasattr(self, 'rix_to_ros_handle'):
+      self.rix_to_ros_handle.stop()
+
+Lines 113-114: Shutdown RIX node
+  if hasattr(self, 'rix_node') and self.rix_node.ok():
+      self.rix_node.shutdown()
+  WHY: Clean up RIX resources
+
+Line 116: Log "shutdown complete"
+
+────────────────────────────────────────────────────────────────────────────
+SECTION 5.2: Main Entry Point
+────────────────────────────────────────────────────────────────────────────
+
+Lines 123-168: main(args=None) - Entry Point Function
+──────────────────────────────────────────────────────────────────────────
+
+Line 131: rclpy.init(args=args)
+  WHY: Initialize ROS2 Python client library
+  MUST DO: Before creating any ROS nodes
+
+Line 133: bridge = None
+  WHY: Declare for access in except/finally blocks
+
+Line 135: try:
+  WHY: Wrap in try/except for error handling
+
+Line 137: bridge = RixRosBridge()
+  WHY: Create bridge instance
+  TRIGGERS: All initialization in __init__
+  RESULT: ROS node, RIX node, both handles created and started
+
+Lines 139-140: Log messages
+  bridge.get_logger().info('Starting bridge spin loop...')
+  bridge.get_logger().info('Press Ctrl+C to stop')
+
+Lines 143-148: **DUAL SPIN LOOP** (CRITICAL!)
+  while rclpy.ok():
+      # Process ROS events
+      rclpy.spin_once(bridge, timeout_sec=0.1)
+      
+      # Process RIX events
+      bridge.spin_once()
+
+WHY DUAL SPINNING:
+  - ROS and RIX are separate middleware systems
+  - Each has its own event loop
+  - Must process both to handle callbacks from both sides
+
+HOW IT WORKS:
+  1. rclpy.spin_once(bridge, timeout_sec=0.1)
+     - Processes ROS callbacks (ros_callback in ROS→RIX handle)
+     - timeout_sec=0.1: Wait up to 100ms for ROS events
+     - Returns after timeout even if no events
+  
+  2. bridge.spin_once()
+     - Processes RIX callbacks (rix_callback in RIX→ROS handle)
+     - Non-blocking (timeout=0.0 in implementation)
+     - Returns immediately
+  
+  3. Loop repeats while rclpy.ok() is True
+
+LOOP FREQUENCY: ~10 Hz minimum (due to 0.1s ROS timeout)
+  - Fast enough for responsive bridging
+  - Not so fast as to waste CPU
+
+Lines 150-153: Handle Ctrl+C
+  except KeyboardInterrupt:
+      if bridge:
+          bridge.get_logger().info('Keyboard interrupt received, shutting down...')
+  
+  WHY: User pressed Ctrl+C to stop
+  RESULT: Graceful shutdown initiated
+
+Lines 154-159: Handle unexpected errors
+  except Exception as e:
+      if bridge:
+          bridge.get_logger().error(f'Unexpected error: {e}')
+      else:
+          print(f'Error before bridge initialization: {e}')
+  
+  WHY: Catch any other errors
+  HANDLES: Errors during init or runtime
+  LOGS: Different message depending on whether bridge exists
+
+Lines 160-168: Cleanup (finally block)
+  finally:
+      if bridge:
+          bridge.shutdown()
+      rclpy.shutdown()
+      print('RIX-ROS Bridge shutdown complete')
+
+WHY FINALLY:
+  - Always executes (even after error or Ctrl+C)
+  - Guarantees cleanup
+
+CLEANUP ORDER:
+  1. bridge.shutdown() - Stops handles, shuts down RIX
+  2. rclpy.shutdown() - Shuts down ROS
+  3. Final print statement
+
+Lines 171-172: if __name__ == '__main__':
+  WHY: Allow running directly with python3 bridge_node.py
+
+────────────────────────────────────────────────────────────────────────────
+SECTION 5.3: Entry Point in setup.py
+────────────────────────────────────────────────────────────────────────────
+
+FILE: setup.py
+Lines 31-35:
+  entry_points={
+      'console_scripts': [
+          'bridge_node = rix_ros_bridge.bridge_node:main',
+      ],
+  },
+
+WHY: Registers command with ROS2
+RESULT: Can run with: ros2 run rix_ros_bridge bridge_node
+FORMAT: 'command_name = package.module:function'
+
+================================================================================
+HOW IT ALL WORKS TOGETHER
+================================================================================
+
+STARTUP SEQUENCE:
+
+1. User runs: ros2 run rix_ros_bridge bridge_node
+2. ROS2 calls: rix_ros_bridge.bridge_node:main
+3. main() executes:
+   a. rclpy.init()
+   b. bridge = RixRosBridge()
+      - super().__init__('rix_ros_bridge') → ROS node created
+      - self.rix_node = rix.core.Node() → RIX node created
+      - _create_bridge_handles() called:
+        * BridgeHandleRosToRix created
+        * BridgeHandleRixToRos created
+        * Both handles started
+          - ROS→RIX: subscribes to ROS /chatter, publishes to RIX /chatter_from_ros
+          - RIX→ROS: subscribes to RIX /chatter, publishes to ROS /chatter_from_rix
+   c. Spin loop starts
+
+RUNTIME (Dual Spin Loop):
+
+  while rclpy.ok():
+      rclpy.spin_once()    → Process ROS events
+          ↓
+      If ROS message on /chatter:
+          → ROS→RIX handle's ros_callback() triggered
+          → Converts & publishes to RIX /chatter_from_ros
+      
+      bridge.spin_once()   → Process RIX events
+          ↓
+      If RIX message on /chatter:
+          → RIX→ROS handle's rix_callback() triggered
+          → Converts & publishes to ROS /chatter_from_rix
+      
+      Loop repeats...
+
+SHUTDOWN SEQUENCE:
+
+1. User presses Ctrl+C
+2. KeyboardInterrupt raised
+3. except KeyboardInterrupt: block catches it
+4. finally: block executes:
+   a. bridge.shutdown() called:
+      - ros_to_rix_handle.stop() → Destroys ROS subscriber
+      - rix_to_ros_handle.stop() → Destroys ROS publisher  
+      - self.rix_node.shutdown() → Shuts down RIX node
+   b. rclpy.shutdown() → Shuts down ROS
+5. Program exits cleanly
+
+================================================================================
+KEY DESIGN DECISIONS
+================================================================================
+
+WHY INHERIT FROM RosNode?
+  - Bridge needs to be a ROS node to create ROS pub/sub
+  - Provides get_logger() for logging
+  - Integrates with rclpy.spin_once()
+
+WHY SEPARATE RIX NODE?
+  - RIX and ROS are independent systems
+  - Can't inherit from both (Python doesn't support multiple inheritance this way)
+  - RIX node as member variable works perfectly
+
+WHY DUAL SPIN LOOP?
+  - ROS and RIX have separate event loops
+  - Must process both to handle callbacks from both sides
+  - Alternative (threads) more complex and unnecessary
+
+WHY timeout_sec=0.1 FOR ROS?
+  - Balance between responsiveness and CPU usage
+  - 100ms is fast enough for most applications
+  - Allows ~10 Hz loop frequency minimum
+
+WHY timeout=0.0 FOR RIX?
+  - Non-blocking to avoid delays
+  - ROS timeout already controls loop frequency
+  - Process available RIX events immediately
+
+WHY SEPARATE TOPICS?
+  - Prevents infinite echo-back loop
+  - /chatter vs /chatter_from_ros/rix
+  - Each handle only sees external messages
+
+================================================================================
+TESTING THE BRIDGE
+================================================================================
+
+TERMINAL 1 - Start rixhub:
+  cd ~/Desktop/ROB490/rix-cpp
+  source ~/.rix/setup.bash
+  rixhub
+
+TERMINAL 2 - Start bridge:
+  cd ~/Desktop/ROB490/bridge_ws
+  source /opt/ros/jazzy/setup.bash
+  source install/setup.bash
+  ros2 run rix_ros_bridge bridge_node
+
+TERMINAL 3 - Test ROS→RIX:
+  ros2 topic pub /chatter std_msgs/msg/String "data: 'Hello from ROS'"
+  # Should see on RIX /chatter_from_ros
+
+TERMINAL 4 - Test RIX→ROS:
+  # Publish on RIX /chatter
+  ros2 topic echo /chatter_from_rix
+  # Should see messages from RIX
+
+================================================================================
+KEY TAKEAWAYS
+================================================================================
+
+✓ RixRosBridge manages both ROS and RIX nodes
+✓ Creates and starts both bridge handles automatically
+✓ Dual spin loop processes events from both systems
+✓ Graceful shutdown with try/except/finally
+✓ Entry point in setup.py enables ros2 run command
+✓ Echo-back prevention built into handle configuration
+✓ Complete error handling for robustness
+
+SECTIONS INTEGRATION:
+  Section 3: Converters → Used by handles
+  Section 4: Handles → Created by bridge node
+  Section 5: Bridge Node → Manages everything and runs event loops
+
+================================================================================
+END OF SECTION 5 GUIDE
+================================================================================

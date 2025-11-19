@@ -1,0 +1,10 @@
+# RIX-ROS Bridge Configuration
+# Simple bridge configuration for Phase 1
+
+# Hard-coded bridge for /chatter topic
+bridges:
+  - topic_name: "/chatter"
+    ros_type: "std_msgs/msg/String"
+    rix_type: "rix.msg.standard.String"
+    direction: "bidirectional"  # Options: bidirectional, ros_to_rix, rix_to_ros
+    queue_size: 10

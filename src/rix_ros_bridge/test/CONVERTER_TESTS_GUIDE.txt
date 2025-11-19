@@ -1,0 +1,375 @@
+================================================================================
+RIX-ROS BRIDGE: CONVERTER TESTS GUIDE
+================================================================================
+University of Michigan - ROB 490
+Created: Nov 4, 2025
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. OVERVIEW
+2. WHAT ARE CONVERTER TESTS?
+3. TEST FILE STRUCTURE
+4. HOW THE TESTS WORK
+5. PREREQUISITES
+6. RUNNING THE TESTS
+7. UNDERSTANDING TEST OUTPUT
+8. TROUBLESHOOTING
+9. MODIFYING TESTS
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+This guide explains the converter unit tests for the RIX-ROS bridge project.
+These tests verify that message conversion between ROS2 and RIX formats works
+correctly.
+
+Location: bridge_ws/src/rix_ros_bridge/test/test_converters.py
+
+================================================================================
+2. WHAT ARE CONVERTER TESTS?
+================================================================================
+
+Converter tests are UNIT TESTS - they test individual functions in isolation.
+
+What they test:
+  ✓ ROS String → RIX String conversion
+  ✓ RIX String → ROS String conversion
+  ✓ Round-trip data integrity (ROS→RIX→ROS and RIX→ROS→RIX)
+
+What they DON'T require:
+  ✗ rixhub running
+  ✗ ROS2 nodes running
+  ✗ Any network communication
+  ✗ Publishers or subscribers
+
+They are pure Python object manipulation tests!
+
+================================================================================
+3. TEST FILE STRUCTURE
+================================================================================
+
+File: bridge_ws/src/rix_ros_bridge/test/test_converters.py
+
+Structure:
+┌─────────────────────────────────────────────────────────────────────┐
+│ Imports:                                                            │
+│   - unittest (Python testing framework)                            │
+│   - std_msgs.msg.String (ROS2 String message)                      │
+│   - rix.msg.standard.String (RIX String message)                   │
+│   - StringConverter (our converter implementation)                 │
+│                                                                     │
+│ Test Class: TestStringConverter                                    │
+│   - test_ros_to_rix_conversion()                                   │
+│   - test_rix_to_ros_conversion()                                   │
+│   - test_roundtrip_conversion()                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+4. HOW THE TESTS WORK
+================================================================================
+
+TEST 1: test_ros_to_rix_conversion
+───────────────────────────────────────────────────────────────────────
+Purpose: Verify ROS String can be converted to RIX String
+
+Steps:
+  1. Create a ROS String message object
+     ros_msg = RosString()
+     ros_msg.data = "Hello from ROS"
+
+  2. Convert to RIX using our converter
+     rix_msg = StringConverter.ros_to_rix(ros_msg)
+
+  3. Verify the result
+     - Check that rix_msg is a RixString instance
+     - Check that rix_msg.data == "Hello from ROS"
+
+Expected Result: PASS if data is preserved correctly
+
+
+TEST 2: test_rix_to_ros_conversion
+───────────────────────────────────────────────────────────────────────
+Purpose: Verify RIX String can be converted to ROS String
+
+Steps:
+  1. Create a RIX String message object
+     rix_msg = RixString()
+     rix_msg.data = "Hello from RIX"
+
+  2. Convert to ROS using our converter
+     ros_msg = StringConverter.rix_to_ros(rix_msg)
+
+  3. Verify the result
+     - Check that ros_msg is a RosString instance
+     - Check that ros_msg.data == "Hello from RIX"
+
+Expected Result: PASS if data is preserved correctly
+
+
+TEST 3: test_roundtrip_conversion
+───────────────────────────────────────────────────────────────────────
+Purpose: Verify data integrity through multiple conversions
+
+Steps:
+  1. Test ROS → RIX → ROS round-trip
+     - Create ROS message with "Round-trip test data"
+     - Convert ROS → RIX
+     - Convert RIX → ROS
+     - Verify original data matches final data
+
+  2. Test RIX → ROS → RIX reverse round-trip
+     - Create RIX message with "Reverse round-trip test"
+     - Convert RIX → ROS
+     - Convert ROS → RIX
+     - Verify original data matches final data
+
+Expected Result: PASS if data is preserved through both round-trips
+
+================================================================================
+5. PREREQUISITES
+================================================================================
+
+Before running tests, ensure:
+
+[1] ROS2 Jazzy is installed
+    Location: /opt/ros/jazzy/
+    Verify: which ros2
+    
+[2] RIX Python is installed
+    Location: ~/.rix/python/rix/
+    Contains: rix.msg.standard.String class
+    
+[3] Bridge workspace is built
+    Command: cd ~/Desktop/ROB490/bridge_ws && colcon build
+    
+[4] pytest is installed
+    Verify: python3 -m pytest --version
+
+================================================================================
+6. RUNNING THE TESTS
+================================================================================
+
+STEP-BY-STEP INSTRUCTIONS
+─────────────────────────────────────────────────────────────────────────
+
+Step 1: Open a terminal
+────────────────────────
+
+Step 2: Navigate to the workspace
+──────────────────────────────────
+cd ~/Desktop/ROB490/bridge_ws
+
+Step 3: Set up the environment (COPY ALL LINES TOGETHER)
+─────────────────────────────────────────────────────────
+export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+source /opt/ros/jazzy/setup.bash
+source install/setup.bash
+
+Explanation of each line:
+  - Line 1: Adds RIX Python to path so Python can find rix.msg.standard
+  - Line 2: Sources ROS2 environment so std_msgs is available
+  - Line 3: Sources bridge workspace so rix_ros_bridge package is available
+
+Step 4: Run the tests
+──────────────────────
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+
+Flags explained:
+  -v = verbose mode (shows each test name and result)
+
+
+COMPLETE ONE-LINER COMMAND
+─────────────────────────────────────────────────────────────────────────
+Copy and paste this entire command:
+
+cd ~/Desktop/ROB490/bridge_ws && \
+export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH && \
+source /opt/ros/jazzy/setup.bash && \
+source install/setup.bash && \
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+
+
+ALTERNATIVE: Run specific test
+─────────────────────────────────────────────────────────────────────────
+To run only ONE test:
+
+# Test only ROS to RIX conversion
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_ros_to_rix_conversion -v
+
+# Test only RIX to ROS conversion
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_rix_to_ros_conversion -v
+
+# Test only round-trip
+python3 -m pytest src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_roundtrip_conversion -v
+
+================================================================================
+7. UNDERSTANDING TEST OUTPUT
+================================================================================
+
+SUCCESSFUL TEST OUTPUT
+─────────────────────────────────────────────────────────────────────────
+========================= test session starts =========================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0
+collected 3 items
+
+src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_rix_to_ros_conversion PASSED [ 33%]
+src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_ros_to_rix_conversion PASSED [ 66%]
+src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_roundtrip_conversion PASSED [100%]
+
+========================== 3 passed in 0.12s ==========================
+
+Interpretation:
+  ✓ All 3 tests PASSED
+  ✓ Took 0.12 seconds to run
+  ✓ Converter implementation is working correctly!
+
+
+FAILED TEST OUTPUT (EXAMPLE)
+─────────────────────────────────────────────────────────────────────────
+If a test fails, you'll see:
+
+FAILED src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_ros_to_rix_conversion
+
+Followed by detailed error information showing:
+  - Which assertion failed
+  - Expected vs actual values
+  - Full stack trace
+
+Common failure reasons:
+  - Data not copied correctly
+  - Wrong type returned
+  - Field name mismatch
+
+================================================================================
+8. TROUBLESHOOTING
+================================================================================
+
+PROBLEM: ModuleNotFoundError: No module named 'rix.msg'
+─────────────────────────────────────────────────────────────────────────
+Cause: RIX Python not in PYTHONPATH
+
+Solution:
+  export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+
+Verify RIX is installed:
+  ls ~/.rix/python/rix/rix/msg/
+
+
+PROBLEM: ModuleNotFoundError: No module named 'std_msgs'
+─────────────────────────────────────────────────────────────────────────
+Cause: ROS2 environment not sourced
+
+Solution:
+  source /opt/ros/jazzy/setup.bash
+
+Verify ROS2 is sourced:
+  echo $ROS_DISTRO
+  # Should output: jazzy
+
+
+PROBLEM: ModuleNotFoundError: No module named 'rix_ros_bridge'
+─────────────────────────────────────────────────────────────────────────
+Cause: Workspace not built or not sourced
+
+Solution:
+  cd ~/Desktop/ROB490/bridge_ws
+  colcon build --packages-select rix_ros_bridge
+  source install/setup.bash
+
+Verify package is installed:
+  ls install/rix_ros_bridge/
+
+
+PROBLEM: Tests fail with NotImplementedError
+─────────────────────────────────────────────────────────────────────────
+Cause: Running old version of code (before Section 3.2 implementation)
+
+Solution: Rebuild the package
+  cd ~/Desktop/ROB490/bridge_ws
+  colcon build --packages-select rix_ros_bridge
+  source install/setup.bash
+  # Then run tests again
+
+
+PROBLEM: Tests pass but I made changes and they're not reflected
+─────────────────────────────────────────────────────────────────────────
+Cause: Need to rebuild after code changes
+
+Solution: Always rebuild after modifying converter code
+  cd ~/Desktop/ROB490/bridge_ws
+  colcon build --packages-select rix_ros_bridge
+  source install/setup.bash
+
+================================================================================
+9. MODIFYING TESTS
+================================================================================
+
+To add new tests:
+
+1. Edit the test file
+   File: bridge_ws/src/rix_ros_bridge/test/test_converters.py
+
+2. Add a new test method to TestStringConverter class
+   Example:
+   
+   def test_empty_string_conversion(self):
+       """Test that empty strings convert correctly."""
+       ros_msg = RosString()
+       ros_msg.data = ""
+       
+       rix_msg = StringConverter.ros_to_rix(ros_msg)
+       self.assertEqual(rix_msg.data, "")
+
+3. Rebuild and run
+   cd ~/Desktop/ROB490/bridge_ws
+   colcon build --packages-select rix_ros_bridge
+   source install/setup.bash
+   python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+
+Test naming convention:
+  - Start with "test_"
+  - Use descriptive names
+  - Include docstring
+
+Common assertions:
+  self.assertEqual(a, b)           # a == b
+  self.assertNotEqual(a, b)        # a != b
+  self.assertIsInstance(obj, type) # obj is correct type
+  self.assertTrue(condition)       # condition is True
+  self.assertFalse(condition)      # condition is False
+  self.assertIsNone(obj)           # obj is None
+
+================================================================================
+QUICK REFERENCE CARD
+================================================================================
+
+ENVIRONMENT SETUP (3 commands):
+  export PYTHONPATH=/home/rob422student/.rix/python/rix:$PYTHONPATH
+  source /opt/ros/jazzy/setup.bash
+  source install/setup.bash
+
+RUN ALL TESTS:
+  python3 -m pytest src/rix_ros_bridge/test/test_converters.py -v
+
+RUN ONE TEST:
+  python3 -m pytest src/rix_ros_bridge/test/test_converters.py::TestStringConverter::test_ros_to_rix_conversion -v
+
+REBUILD AFTER CHANGES:
+  colcon build --packages-select rix_ros_bridge
+
+VERIFY ENVIRONMENT:
+  echo $ROS_DISTRO                     # Should show: jazzy
+  echo $PYTHONPATH                     # Should include: .rix/python/rix
+  ls install/rix_ros_bridge/           # Should exist
+
+================================================================================
+END OF GUIDE
+================================================================================
+
+For questions or issues, refer to:
+  - Main roadmap: RIX_ROS_BRIDGE_ROADMAP_NOV7.txt
+  - Package README: bridge_ws/src/rix_ros_bridge/README.md
+  - Test file: bridge_ws/src/rix_ros_bridge/test/test_converters.py
