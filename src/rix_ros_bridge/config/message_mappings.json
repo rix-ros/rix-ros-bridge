@@ -1,0 +1,329 @@
+{
+  "comment": "ROS-RIX Message Type Mappings - Phase 2",
+  "description": "Registry of verified compatible message types for dynamic bridge creation",
+  "version": "0.3.0",
+  "last_updated": "2025-11-25",
+  "verified_types_count": 26,
+  
+  "message_mappings": {
+    "std_msgs/String": {
+      "ros_package": "std_msgs",
+      "ros_type": "String",
+      "ros_import": "std_msgs.msg.String",
+      "rix_package": "standard",
+      "rix_type": "String",
+      "rix_import": "rix.msg.standard.String",
+      "converter": "StringConverter",
+      "verified": true,
+      "phase": 1
+    },
+    
+    "std_msgs/Int32": {
+      "ros_package": "std_msgs",
+      "ros_type": "Int32",
+      "ros_import": "std_msgs.msg.Int32",
+      "rix_package": "standard",
+      "rix_type": "Int32",
+      "rix_import": "rix.msg.standard.Int32",
+      "converter": "Int32Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Int64": {
+      "ros_package": "std_msgs",
+      "ros_type": "Int64",
+      "ros_import": "std_msgs.msg.Int64",
+      "rix_package": "standard",
+      "rix_type": "Int64",
+      "rix_import": "rix.msg.standard.Int64",
+      "converter": "Int64Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Float32": {
+      "ros_package": "std_msgs",
+      "ros_type": "Float32",
+      "ros_import": "std_msgs.msg.Float32",
+      "rix_package": "standard",
+      "rix_type": "Float",
+      "rix_import": "rix.msg.standard.Float",
+      "converter": "Float32Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Float64": {
+      "ros_package": "std_msgs",
+      "ros_type": "Float64",
+      "ros_import": "std_msgs.msg.Float64",
+      "rix_package": "standard",
+      "rix_type": "Double",
+      "rix_import": "rix.msg.standard.Double",
+      "converter": "Float64Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Bool": {
+      "ros_package": "std_msgs",
+      "ros_type": "Bool",
+      "ros_import": "std_msgs.msg.Bool",
+      "rix_package": "standard",
+      "rix_type": "Bool",
+      "rix_import": "rix.msg.standard.Bool",
+      "converter": "BoolConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/UInt8": {
+      "ros_package": "std_msgs",
+      "ros_type": "UInt8",
+      "ros_import": "std_msgs.msg.UInt8",
+      "rix_package": "standard",
+      "rix_type": "UInt8",
+      "rix_import": "rix.msg.standard.UInt8",
+      "converter": "UInt8Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/UInt16": {
+      "ros_package": "std_msgs",
+      "ros_type": "UInt16",
+      "ros_import": "std_msgs.msg.UInt16",
+      "rix_package": "standard",
+      "rix_type": "UInt16",
+      "rix_import": "rix.msg.standard.UInt16",
+      "converter": "UInt16Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/UInt32": {
+      "ros_package": "std_msgs",
+      "ros_type": "UInt32",
+      "ros_import": "std_msgs.msg.UInt32",
+      "rix_package": "standard",
+      "rix_type": "UInt32",
+      "rix_import": "rix.msg.standard.UInt32",
+      "converter": "UInt32Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/UInt64": {
+      "ros_package": "std_msgs",
+      "ros_type": "UInt64",
+      "ros_import": "std_msgs.msg.UInt64",
+      "rix_package": "standard",
+      "rix_type": "UInt64",
+      "rix_import": "rix.msg.standard.UInt64",
+      "converter": "UInt64Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Int8": {
+      "ros_package": "std_msgs",
+      "ros_type": "Int8",
+      "ros_import": "std_msgs.msg.Int8",
+      "rix_package": "standard",
+      "rix_type": "Int8",
+      "rix_import": "rix.msg.standard.Int8",
+      "converter": "Int8Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Int16": {
+      "ros_package": "std_msgs",
+      "ros_type": "Int16",
+      "ros_import": "std_msgs.msg.Int16",
+      "rix_package": "standard",
+      "rix_type": "Int16",
+      "rix_import": "rix.msg.standard.Int16",
+      "converter": "Int16Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Point": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Point",
+      "ros_import": "geometry_msgs.msg.Point",
+      "rix_package": "geometry",
+      "rix_type": "Point",
+      "rix_import": "rix.msg.geometry.Point",
+      "converter": "PointConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Pose": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Pose",
+      "ros_import": "geometry_msgs.msg.Pose",
+      "rix_package": "geometry",
+      "rix_type": "Pose",
+      "rix_import": "rix.msg.geometry.Pose",
+      "converter": "PoseConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Quaternion": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Quaternion",
+      "ros_import": "geometry_msgs.msg.Quaternion",
+      "rix_package": "geometry",
+      "rix_type": "Quaternion",
+      "rix_import": "rix.msg.geometry.Quaternion",
+      "converter": "QuaternionConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Vector3": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Vector3",
+      "ros_import": "geometry_msgs.msg.Vector3",
+      "rix_package": "geometry",
+      "rix_type": "Vector3",
+      "rix_import": "rix.msg.geometry.Vector3",
+      "converter": "Vector3Converter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Twist": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Twist",
+      "ros_import": "geometry_msgs.msg.Twist",
+      "rix_package": "geometry",
+      "rix_type": "Twist",
+      "rix_import": "rix.msg.geometry.Twist",
+      "converter": "TwistConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "geometry_msgs/Transform": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Transform",
+      "ros_import": "geometry_msgs.msg.Transform",
+      "rix_package": "geometry",
+      "rix_type": "Transform",
+      "rix_import": "rix.msg.geometry.Transform",
+      "converter": "TransformConverter",
+      "verified": true,
+      "phase": 2
+    },
+    
+    "std_msgs/Header": {
+      "ros_package": "std_msgs",
+      "ros_type": "Header",
+      "ros_import": "std_msgs.msg.Header",
+      "rix_package": "standard",
+      "rix_type": "Header",
+      "rix_import": "rix.msg.standard.Header",
+      "converter": "HeaderConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Contains timestamp and frame_id"
+    },
+    
+    "std_msgs/ColorRGBA": {
+      "ros_package": "std_msgs",
+      "ros_type": "ColorRGBA",
+      "ros_import": "std_msgs.msg.ColorRGBA",
+      "rix_package": "standard",
+      "rix_type": "Color",
+      "rix_import": "rix.msg.standard.Color",
+      "converter": "ColorRGBAConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "RGBA color values (0.0-1.0 floats)"
+    },
+    
+    "geometry_msgs/PoseStamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "PoseStamped",
+      "ros_import": "geometry_msgs.msg.PoseStamped",
+      "rix_package": "geometry",
+      "rix_type": "PoseStamped",
+      "rix_import": "rix.msg.geometry.PoseStamped",
+      "converter": "PoseStampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Pose with Header timestamp"
+    },
+    
+    "geometry_msgs/PointStamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "PointStamped",
+      "ros_import": "geometry_msgs.msg.PointStamped",
+      "rix_package": "geometry",
+      "rix_type": "PointStamped",
+      "rix_import": "rix.msg.geometry.PointStamped",
+      "converter": "PointStampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Point with Header timestamp"
+    },
+    
+    "geometry_msgs/QuaternionStamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "QuaternionStamped",
+      "ros_import": "geometry_msgs.msg.QuaternionStamped",
+      "rix_package": "geometry",
+      "rix_type": "QuaternionStamped",
+      "rix_import": "rix.msg.geometry.QuaternionStamped",
+      "converter": "QuaternionStampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Quaternion with Header timestamp"
+    },
+    
+    "geometry_msgs/Vector3Stamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "Vector3Stamped",
+      "ros_import": "geometry_msgs.msg.Vector3Stamped",
+      "rix_package": "geometry",
+      "rix_type": "Vector3Stamped",
+      "rix_import": "rix.msg.geometry.Vector3Stamped",
+      "converter": "Vector3StampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Vector3 with Header timestamp"
+    },
+    
+    "geometry_msgs/TransformStamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "TransformStamped",
+      "ros_import": "geometry_msgs.msg.TransformStamped",
+      "rix_package": "geometry",
+      "rix_type": "TransformStamped",
+      "rix_import": "rix.msg.geometry.TransformStamped",
+      "converter": "TransformStampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Transform with Header and child_frame_id"
+    },
+    
+    "geometry_msgs/TwistStamped": {
+      "ros_package": "geometry_msgs",
+      "ros_type": "TwistStamped",
+      "ros_import": "geometry_msgs.msg.TwistStamped",
+      "rix_package": "geometry",
+      "rix_type": "TwistStamped",
+      "rix_import": "rix.msg.geometry.TwistStamped",
+      "converter": "TwistStampedConverter",
+      "verified": true,
+      "phase": 2,
+      "note": "Twist with Header timestamp"
+    }
+  }
+}

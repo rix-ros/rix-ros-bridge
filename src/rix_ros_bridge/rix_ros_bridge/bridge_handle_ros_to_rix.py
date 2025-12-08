@@ -67,17 +67,20 @@ class BridgeHandleRosToRix:
             return
         
         try:
+            print(f"✓ ROS→RIX CALLBACK TRIGGERED: {self.ros_topic}", flush=True)
             # Convert ROS message to RIX message
             rix_msg = self.converter.ros_to_rix(ros_msg)
             
             # Publish to RIX
             self.rix_publisher.publish(rix_msg)
+            print(f"✓ ROS→RIX SUCCESS: {self.ros_topic} → {self.rix_topic}", flush=True)
             
             # Log the bridged message
             self.ros_node.get_logger().debug(
                 f'Bridged ROS→RIX: {self.ros_topic} → {self.rix_topic}: {ros_msg.data}'
             )
         except Exception as e:
+            print(f"✗ ROS→RIX ERROR: {e}", flush=True)
             self.ros_node.get_logger().error(
                 f'Error bridging ROS→RIX message: {e}'
             )

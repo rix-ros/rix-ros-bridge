@@ -2,6 +2,21 @@
 
 A bidirectional message bridge between ROS2 and RIX robotics middleware.
 
+## Directory Structure
+
+```
+bridge_ws/
+├── src/                    # ROS 2 packages
+│   └── rix_ros_bridge/     # Main bridge package
+├── docs/                   # Documentation and design guides
+├── scripts/
+│   ├── demos/             # Demo scripts (demo2.sh, etc.)
+│   └── tests/             # Test scripts
+├── build/                  # Build artifacts (git-ignored)
+├── install/                # Install space (git-ignored)
+└── log/                    # Logs (git-ignored)
+```
+
 ## Project Overview
 
 This bridge enables seamless communication between ROS2 (Robot Operating System 2) and RIX (a modern robotics middleware system), allowing robots to leverage ecosystems from both platforms.

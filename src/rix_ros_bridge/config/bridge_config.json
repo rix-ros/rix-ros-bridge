@@ -1,0 +1,24 @@
+{
+  "comment": "RIX-ROS Bridge Configuration - Example Configuration",
+  "description": "Defines which topics to bridge between ROS2 and RIX",
+  "version": "0.2.0",
+  
+  "bridges": [
+    {
+      "name": "string_bridge",
+      "ros_topic": "/chatter",
+      "rix_topic": "/chatter_from_ros",
+      "message_type": "std_msgs/String",
+      "direction": "ros_to_rix",
+      "queue_size": 10
+    },
+    {
+      "name": "string_echo_bridge",
+      "ros_topic": "/chatter_from_rix",
+      "rix_topic": "/chatter",
+      "message_type": "std_msgs/String",
+      "direction": "rix_to_ros",
+      "queue_size": 10
+    }
+  ]
+}

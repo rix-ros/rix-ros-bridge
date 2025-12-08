@@ -1,0 +1,25 @@
+{
+  "bridges": [
+    {
+      "name": "string_test_bridge",
+      "message_type": "std_msgs/String",
+      "ros_topic": "/test_string",
+      "rix_topic": "/test_string_from_ros",
+      "direction": "bidirectional"
+    },
+    {
+      "name": "int32_test_bridge",
+      "message_type": "std_msgs/Int32",
+      "ros_topic": "/test_int32",
+      "rix_topic": "/test_int32_from_ros",
+      "direction": "bidirectional"
+    },
+    {
+      "name": "pose_test_bridge",
+      "message_type": "geometry_msgs/Pose",
+      "ros_topic": "/test_pose",
+      "rix_topic": "/test_pose_from_ros",
+      "direction": "bidirectional"
+    }
+  ]
+}

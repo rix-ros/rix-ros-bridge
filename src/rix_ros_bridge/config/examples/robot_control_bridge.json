@@ -1,0 +1,43 @@
+{
+  "comment": "Robot control bridge example",
+  "description": "Realistic robot control scenario with multiple sensors and actuators",
+  
+  "bridges": [
+    {
+      "name": "cmd_vel_bridge",
+      "ros_topic": "/cmd_vel",
+      "rix_topic": "/robot/velocity_command",
+      "message_type": "geometry_msgs/Twist",
+      "direction": "ros_to_rix",
+      "queue_size": 1,
+      "comment": "Send velocity commands from ROS to RIX robot"
+    },
+    {
+      "name": "odometry_bridge",
+      "ros_topic": "/odom_pose",
+      "rix_topic": "/robot/odometry",
+      "message_type": "geometry_msgs/Pose",
+      "direction": "rix_to_ros",
+      "queue_size": 10,
+      "comment": "Receive robot pose from RIX to ROS"
+    },
+    {
+      "name": "position_setpoint_bridge",
+      "ros_topic": "/goal_pose",
+      "rix_topic": "/robot/goal",
+      "message_type": "geometry_msgs/Point",
+      "direction": "ros_to_rix",
+      "queue_size": 1,
+      "comment": "Send goal positions from ROS planner to RIX"
+    },
+    {
+      "name": "status_bridge",
+      "ros_topic": "/robot_status",
+      "rix_topic": "/robot/ready",
+      "message_type": "std_msgs/Bool",
+      "direction": "rix_to_ros",
+      "queue_size": 1,
+      "comment": "Robot ready status from RIX to ROS"
+    }
+  ]
+}

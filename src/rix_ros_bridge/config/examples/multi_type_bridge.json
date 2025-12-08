@@ -1,0 +1,39 @@
+{
+  "comment": "Multi-type bridge example",
+  "description": "Demonstrates bridging multiple message types simultaneously",
+  
+  "bridges": [
+    {
+      "name": "string_bridge",
+      "ros_topic": "/chatter",
+      "rix_topic": "/chatter_rix",
+      "message_type": "std_msgs/String",
+      "direction": "bidirectional",
+      "queue_size": 10
+    },
+    {
+      "name": "pose_bridge",
+      "ros_topic": "/robot_pose",
+      "rix_topic": "/robot_pose_rix",
+      "message_type": "geometry_msgs/Pose",
+      "direction": "ros_to_rix",
+      "queue_size": 1
+    },
+    {
+      "name": "velocity_bridge",
+      "ros_topic": "/cmd_vel",
+      "rix_topic": "/cmd_vel_rix",
+      "message_type": "geometry_msgs/Twist",
+      "direction": "bidirectional",
+      "queue_size": 5
+    },
+    {
+      "name": "counter_bridge",
+      "ros_topic": "/tick_count",
+      "rix_topic": "/tick_count_rix",
+      "message_type": "std_msgs/Int32",
+      "direction": "rix_to_ros",
+      "queue_size": 100
+    }
+  ]
+}

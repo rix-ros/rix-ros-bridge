@@ -1,0 +1,25 @@
+{
+  "bridges": [
+    {
+      "name": "bidirectional_string",
+      "message_type": "std_msgs/String",
+      "ros_topic": "/bidir_string",
+      "rix_topic": "/bidir_string_rix",
+      "direction": "bidirectional"
+    },
+    {
+      "name": "bidirectional_int32",
+      "message_type": "std_msgs/Int32",
+      "ros_topic": "/bidir_int32",
+      "rix_topic": "/bidir_int32_rix",
+      "direction": "bidirectional"
+    },
+    {
+      "name": "bidirectional_pose",
+      "message_type": "geometry_msgs/Pose",
+      "ros_topic": "/bidir_pose",
+      "rix_topic": "/bidir_pose_rix",
+      "direction": "bidirectional"
+    }
+  ]
+}

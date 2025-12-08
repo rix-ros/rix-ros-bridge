@@ -1,0 +1,15 @@
+{
+  "comment": "Bidirectional bridge example",
+  "description": "Two-way communication on same topic name",
+  
+  "bridges": [
+    {
+      "name": "bidirectional_string",
+      "ros_topic": "/shared_chatter",
+      "rix_topic": "/shared_chatter",
+      "message_type": "std_msgs/String",
+      "direction": "bidirectional",
+      "queue_size": 10
+    }
+  ]
+}

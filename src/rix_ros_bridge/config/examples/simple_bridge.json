@@ -1,0 +1,15 @@
+{
+  "comment": "Simple single-direction String bridge",
+  "description": "Basic example for testing ROS→RIX communication",
+  
+  "bridges": [
+    {
+      "name": "simple_string_bridge",
+      "ros_topic": "/chatter",
+      "rix_topic": "/chatter_from_ros",
+      "message_type": "std_msgs/String",
+      "direction": "ros_to_rix",
+      "queue_size": 10
+    }
+  ]
+}
